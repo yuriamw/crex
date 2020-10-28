@@ -5,12 +5,14 @@
 #include <QIcon>
 #include <QMenu>
 #include <QMenuBar>
+#include <QStringList>
 
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
+#include <QTreeView>
 #include <QWidget>
 #include <QFrame>
 #include <QLayout>
+
+#include <QTimer>
 
 #include <QtNetwork>
 #include <QUrl>
@@ -30,8 +32,9 @@ MW::MW(QWidget *parent)
     QHBoxLayout *lh = new QHBoxLayout();
     w->setLayout(lh);
 
-    twMarket = new QTreeWidget();
-    lh->addWidget(twMarket);
+    tvMarket = new QTreeView();
+    lh->addWidget(tvMarket);
+    tvMarket->setModel(exchangeInfo.model());
 
     QFrame *p = new QFrame();
     p->setMinimumWidth(300);
@@ -49,18 +52,34 @@ MW::MW(QWidget *parent)
     toolBar->addAction(act);
     menu->addAction(act);
 
+    exchange_date_time_ = new QLabel(tr("no data"));
+    statusBar()->addPermanentWidget(exchange_date_time_);
+
+    QTimer *timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &MW::updateTimeLabel);
+    timer->start(500);
+
     initNAM();
+
+    statusBar()->showMessage(tr("Ready"));
 }
 
 MW::~MW()
 {
 }
 
+void MW::updateTimeLabel()
+{
+    exchange_date_time_->setText(QString("%1 %2")
+            .arg(exchangeInfo.exchangeTime().toString("yyyy-MM-dd hh:mm:ss"))
+            .arg(exchangeInfo.exchangeTimeZone().displayName(QTimeZone::GenericTime, QTimeZone::ShortName)));
+}
+
 void MW::onConnect(bool /*checked*/)
 {
     qDebug() << "exchangeInfo...";
 
-    exchangeInfo.clear();
+    data_.clear();
 
     reply = nam.get(QNetworkRequest(QUrl("https://fapi.binance.com/fapi/v1/exchangeInfo")));
     connect(reply, &QNetworkReply::finished, this, &MW::httpFinished);
@@ -102,6 +121,7 @@ void MW::httpFinished()
     if (reply->error()) {
         qDebug() << "HTTP error";
         exchangeInfo.clear();
+        data_.clear();
         reply->deleteLater();
         reply = nullptr;
         return;
@@ -139,23 +159,29 @@ void MW::httpFinished()
 //        QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
 //    downloadButton->setEnabled(true);
 
-    if (!exchangeInfo.parse())
+//    {
+//        static int q = 0;
+//        QFile file(QString("exchangeinfo-%1.json").arg(q++));
+//        if (!file.open(QIODevice::WriteOnly))
+//        {
+//            qDebug() << "IO error:" << file.errorString();
+//        }
+//        if (file.write(data_) < 0)
+//        {
+//            qDebug() << "IO error:" << file.errorString();
+//        }
+//        file.close();
+//    }
+    if (!exchangeInfo.parse(data_))
     {
         return;
     }
-
-    QList<QTreeWidgetItem *> items;
-    for (int i = 0; i < exchangeInfo.size(); ++i)
-    {
-        items.append(new QTreeWidgetItem((QTreeWidget*)0, QStringList(exchangeInfo.symbols[i].symbol)));
-    }
-    twMarket->addTopLevelItems(items);
 }
 
 void MW::httpReadyRead()
 {
     qDebug() << __FUNCTION__;
-    exchangeInfo.append(reply->readAll());
+    data_.append(reply->readAll());
 }
 
 void MW::slotAuthenticationRequired(QNetworkReply */*reply*/, QAuthenticator */*authenticator*/)

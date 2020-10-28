@@ -19,12 +19,16 @@ SOURCES += \
     exchangeinfo.cpp \
     main.cpp \
     mw.cpp \
-    symbol.cpp
+    symbol.cpp \
+    symbolitem.cpp \
+    symbolmodel.cpp
 
 HEADERS += \
     exchangeinfo.h \
     mw.h \
-    symbol.h
+    symbol.h \
+    symbolitem.h \
+    symbolmodel.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

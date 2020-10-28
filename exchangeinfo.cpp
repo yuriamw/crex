@@ -5,29 +5,36 @@
 #include <QJsonObject>
 #include <QFile>
 #include <QFile>
+#include <QModelIndex>
+#include <QDateTime>
+#include <QTimeZone>
 
 #include <QDebug>
 
 #include "exchangeinfo.h"
+#include "symbolmodel.h"
 
-ExchangeInfo::ExchangeInfo(QObject *parent) : QObject(parent)
+ExchangeInfo::ExchangeInfo(QObject *parent)
+    : QObject(parent)
+    , model_(new SymbolModel(QList<Symbol>()))
+    , exchange_time_(0)
+    , exchange_timezone_("-")
 {
+//    qDebug() << QTimeZone::availableTimeZoneIds();
+}
 
+QAbstractItemModel *ExchangeInfo::model()
+{
+    return model_;
 }
 
 void ExchangeInfo::clear()
 {
-    data_.clear();
-}
-
-void ExchangeInfo::append(const QByteArray &data)
-{
-    data_.append(data);
-}
-
-const QByteArray & ExchangeInfo::data()
-{
-    return data_;
+    symbols.clear();
+    QModelIndex root = model_->index(0, 0, QModelIndex());
+    model_->removeRows(0, model_->rowCount(root), root);
+    exchange_timezone_ = "-";
+    exchange_time_ = 0;
 }
 
 int ExchangeInfo::size()
@@ -35,21 +42,36 @@ int ExchangeInfo::size()
     return symbols.size();
 }
 
-bool ExchangeInfo::parse()
+void ExchangeInfo::quoteLongInt(QByteArray & data, const QString & key)
 {
-//    qDebug() << data_;
+    int pos_time = data.indexOf(key);
+    if (pos_time > 0)
+    {
+        int pos_colon = data.indexOf(":", pos_time + key.size()); // + size of "key"
+        int pos_num = pos_colon + 1;
+        for (; (data[pos_num] < '0' || data[pos_num] > '9'); ++pos_num){;} // skip spaces if any
+        int pos_comma = data.indexOf(',', pos_num);
+        data.insert(pos_comma, 1, '"');
+        data.insert(pos_num, 1, '"');
+    }
+}
+
+bool ExchangeInfo::parse(QByteArray & data)
+{
+    quoteLongInt(data, "serverTime");
 
     QJsonParseError jsonError;
-    QJsonDocument doc = QJsonDocument::fromJson(data_, &jsonError);
+    QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
     if (doc.isNull())
     {
         qDebug() << "JSON error:" << jsonError.errorString();
-        data_.clear();
         return false;
     }
 
-//    dumpToFile("exchange.json", doc);
+//    static int q = 0;
+//    dumpToFile(QString("exchange-dump-%1.json").arg(q++), doc);
 
+    this->clear();
     return read(doc.object());
 }
 
@@ -74,11 +96,12 @@ bool ExchangeInfo::read(const QJsonObject &json)
 {
     if (json.contains("serverTime"))
     {
-        qDebug() << "servertime:" << json["serverTime"];
+        uint64_t timestamp = QString(json["serverTime"].toString()).toLongLong();
+        setExchangeTime(timestamp);
     }
     if (json.contains("timezone"))
     {
-        qDebug() << "timezone:" << json["timezone"];
+        setTimeZone(json["timezone"].toString());
     }
     if (json.contains("symbols") && json["symbols"].isArray())
     {
@@ -94,7 +117,39 @@ bool ExchangeInfo::read(const QJsonObject &json)
                 return false;
             }
             symbols.append(symbol);
+            model_->insertSymbol(symbol);
         }
     }
     return true;
+}
+
+QDateTime ExchangeInfo::exchangeTime()
+{
+    if (exchange_time_ == 0)
+        return QDateTime();
+
+    QDateTime datetime;
+    datetime.setTimeZone(exchangeTimeZone());
+    datetime.setTime_t(exchange_time_ / 1000);
+    return datetime;
+}
+
+qlonglong ExchangeInfo::exchangeTimeStamp()
+{
+    return exchange_time_;
+}
+
+void ExchangeInfo::setExchangeTime(const qlonglong timestamp)
+{
+    exchange_time_ = timestamp;
+}
+
+QTimeZone ExchangeInfo::exchangeTimeZone()
+{
+    return QTimeZone(exchange_timezone_.toLatin1());
+}
+
+void ExchangeInfo::setTimeZone(const QString &timezone)
+{
+    exchange_timezone_ = timezone;
 }
