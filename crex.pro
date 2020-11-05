@@ -17,6 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     exchangeinfo.cpp \
+    exchangeprotocol.cpp \
     main.cpp \
     mw.cpp \
     symbol.cpp \
@@ -25,6 +26,8 @@ SOURCES += \
 
 HEADERS += \
     exchangeinfo.h \
+    exchangeprotocol.h \
+    logger.h \
     mw.h \
     symbol.h \
     symbolitem.h \

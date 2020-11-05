@@ -2,7 +2,6 @@
 
 #include "symbol.h"
 
-//#include <>
 SymbolItem::SymbolItem(const QList<Symbol> &data, SymbolItem *parent)
 {
     m_parentItem = parent;

@@ -9,7 +9,7 @@
 #include <QDateTime>
 #include <QTimeZone>
 
-#include <QDebug>
+#include "logger.h"
 
 #include "exchangeinfo.h"
 #include "symbolmodel.h"
@@ -20,7 +20,7 @@ ExchangeInfo::ExchangeInfo(QObject *parent)
     , exchange_time_(0)
     , exchange_timezone_("-")
 {
-//    qDebug() << QTimeZone::availableTimeZoneIds();
+//    TRACE("") << QTimeZone::availableTimeZoneIds();
 }
 
 QAbstractItemModel *ExchangeInfo::model()
@@ -64,7 +64,7 @@ bool ExchangeInfo::parse(QByteArray & data)
     QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
     if (doc.isNull())
     {
-        qDebug() << "JSON error:" << jsonError.errorString();
+        TRACE("") << "JSON error:" << jsonError.errorString();
         return false;
     }
 
@@ -80,12 +80,12 @@ bool ExchangeInfo::dumpToFile(const QString & filename, const QJsonDocument & do
     QFile file(filename);
     if (!file.open(QIODevice::WriteOnly))
     {
-        qDebug() << "IO error:" << file.errorString();
+        TRACE("") << "IO error:" << file.errorString();
         return false;
     }
     if (file.write(doc.toJson()) < 0)
     {
-        qDebug() << "IO error:" << file.errorString();
+        TRACE("") << "IO error:" << file.errorString();
         return false;
     }
     file.close();

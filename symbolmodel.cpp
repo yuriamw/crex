@@ -1,4 +1,4 @@
-#include <QDebug>
+#include "logger.h"
 
 #include "symbolmodel.h"
 
@@ -73,7 +73,7 @@ int SymbolModel::columnCount(const QModelIndex &parent) const
     else
         count = rootItem->columnCount();
 
-//    qDebug() << count;
+//    TRACE("") << count;
     return count;
 }
 

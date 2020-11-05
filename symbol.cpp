@@ -2,7 +2,7 @@
 
 #include <QString>
 
-#include <QDebug>
+#include "logger.h"
 
 Symbol::Symbol() :
     symbol("")
@@ -20,32 +20,32 @@ bool Symbol::read(const QJsonObject &json)
 {
     if (!json.contains("symbol"))
     {
-        qDebug() << "Parse error: no 'symbol'";
+        TRACE("") << "Parse error: no 'symbol'";
         return false;
     }
     if (!json.contains("baseAsset"))
     {
-        qDebug() << "Parse error: no 'baseAsset'";
+        TRACE("") << "Parse error: no 'baseAsset'";
         return false;
     }
     if (!json.contains("quoteAsset"))
     {
-        qDebug() << "Parse error: no 'quoteAsset'";
+        TRACE("") << "Parse error: no 'quoteAsset'";
         return false;
     }
     if (!json.contains("baseAssetPrecision"))
     {
-        qDebug() << "Parse error: no 'baseAssetPrecision'";
+        TRACE("") << "Parse error: no 'baseAssetPrecision'";
         return false;
     }
     if (!json.contains("quotePrecision"))
     {
-        qDebug() << "Parse error: no 'quotePrecision'";
+        TRACE("") << "Parse error: no 'quotePrecision'";
         return false;
     }
     if (!json.contains("pricePrecision"))
     {
-        qDebug() << "Parse error: no 'pricePrecision'";
+        TRACE("") << "Parse error: no 'pricePrecision'";
         return false;
     }
     symbol = json["symbol"].toString();

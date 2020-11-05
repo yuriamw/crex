@@ -12,6 +12,7 @@
 #include <QByteArray>
 
 #include "exchangeinfo.h"
+#include "exchangeprotocol.h"
 
 class MW : public QMainWindow
 {
@@ -34,7 +35,6 @@ private:
     void updateTimeLabel();
 
 private:
-//    QStatusBar *statusBar;
     QLabel *exchange_date_time_;
     QTreeView *tvMarket;
     QNetworkAccessManager nam;
@@ -42,5 +42,6 @@ private:
     QByteArray data_;
 
     ExchangeInfo exchangeInfo;
+    ExchangeProtocol *exchangeProtocol;
 };
 #endif // MW_H

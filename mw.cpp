@@ -19,10 +19,13 @@
 
 #include <QMessageBox>
 
-#include <QDebug>
+#include "logger.h"
+
+#include "exchangeprotocol.h"
 
 MW::MW(QWidget *parent)
     : QMainWindow(parent)
+    , exchangeProtocol(new ExchangeProtocol("Binance FUTURES", "https://fapi.binance.com", "fapi/v1", this))
 {
     QMenu *menu;
     QAction *act;
@@ -77,7 +80,7 @@ void MW::updateTimeLabel()
 
 void MW::onConnect(bool /*checked*/)
 {
-    qDebug() << "exchangeInfo...";
+    TRACE("exchangeInfo...");
 
     data_.clear();
 
@@ -87,12 +90,12 @@ void MW::onConnect(bool /*checked*/)
 
 //    if (checked)
 //    {
-//        qDebug() << "Connect to server";
+//        TRACE("") << "Connect to server";
 //        nam.get(QUrl("https://fapi.binance.com/fapi/v1/exchangeInfo"));
 //    }
 //    else
 //    {
-//        qDebug() << "Disconnect from server";
+//        TRACE("") << "Disconnect from server";
 //    }
 }
 
@@ -104,7 +107,7 @@ void MW::initNAM()
 
 void MW::httpFinished()
 {
-    qDebug() << __FUNCTION__;
+    TRACE("");
 //    QFileInfo fi;
 //    if (file) {
 //        fi.setFile(file->fileName());
@@ -119,7 +122,7 @@ void MW::httpFinished()
 //    }
 
     if (reply->error()) {
-        qDebug() << "HTTP error";
+        TRACE("") << "HTTP error";
         exchangeInfo.clear();
         data_.clear();
         reply->deleteLater();
@@ -149,7 +152,7 @@ void MW::httpFinished()
 //            return;
 //        }
 //        startRequest(redirectedUrl);
-        qDebug() << "!!!Redirected to:" << redirectedUrl;
+        TRACE("") << "!!!Redirected to:" << redirectedUrl;
         return;
     }
 
@@ -164,11 +167,11 @@ void MW::httpFinished()
 //        QFile file(QString("exchangeinfo-%1.json").arg(q++));
 //        if (!file.open(QIODevice::WriteOnly))
 //        {
-//            qDebug() << "IO error:" << file.errorString();
+//            TRACE("") << "IO error:" << file.errorString();
 //        }
 //        if (file.write(data_) < 0)
 //        {
-//            qDebug() << "IO error:" << file.errorString();
+//            TRACE("") << "IO error:" << file.errorString();
 //        }
 //        file.close();
 //    }
@@ -180,13 +183,13 @@ void MW::httpFinished()
 
 void MW::httpReadyRead()
 {
-    qDebug() << __FUNCTION__;
+    TRACE("");
     data_.append(reply->readAll());
 }
 
 void MW::slotAuthenticationRequired(QNetworkReply */*reply*/, QAuthenticator */*authenticator*/)
 {
-    qDebug() << __FUNCTION__;
+    TRACE("");
 }
 
 void MW::sslErrors(QNetworkReply *reply, const QList<QSslError> &errors)
