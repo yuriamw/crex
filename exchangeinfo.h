@@ -21,6 +21,7 @@ public:
 
     void clear();
     bool parse(QByteArray & data);
+    bool parse(const QJsonObject &json);
     int size();
     QDateTime exchangeTime();
     qlonglong exchangeTimeStamp();
@@ -33,7 +34,6 @@ signals:
 
 private:
     void quoteLongInt(QByteArray & data, const QString & key);
-    bool read(const QJsonObject &json);
     bool dumpToFile(const QString & filename, const QJsonDocument & doc);
     void setExchangeTime(const qlonglong timestamp);
     void setTimeZone(const QString &timezone);

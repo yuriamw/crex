@@ -72,7 +72,7 @@ bool ExchangeInfo::parse(QByteArray & data)
 //    dumpToFile(QString("exchange-dump-%1.json").arg(q++), doc);
 
     this->clear();
-    return read(doc.object());
+    return parse(doc.object());
 }
 
 bool ExchangeInfo::dumpToFile(const QString & filename, const QJsonDocument & doc)
@@ -92,7 +92,7 @@ bool ExchangeInfo::dumpToFile(const QString & filename, const QJsonDocument & do
     return true;
 }
 
-bool ExchangeInfo::read(const QJsonObject &json)
+bool ExchangeInfo::parse(const QJsonObject &json)
 {
     if (json.contains("serverTime"))
     {

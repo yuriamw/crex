@@ -14,9 +14,6 @@
 
 #include <QTimer>
 
-#include <QtNetwork>
-#include <QUrl>
-
 #include <QMessageBox>
 
 #include "logger.h"
@@ -25,7 +22,9 @@
 
 MW::MW(QWidget *parent)
     : QMainWindow(parent)
+    , connectAction(nullptr)
     , exchangeProtocol(new ExchangeProtocol("Binance FUTURES", "https://fapi.binance.com", "fapi/v1", this))
+    , exchange_info_timer_(new QTimer(this))
 {
     QMenu *menu;
     QAction *act;
@@ -37,6 +36,7 @@ MW::MW(QWidget *parent)
 
     tvMarket = new QTreeView();
     lh->addWidget(tvMarket);
+    connect(tvMarket, &QTreeView::activated, this, &MW::onTvItemActivated);
     tvMarket->setModel(exchangeInfo.model());
 
     QFrame *p = new QFrame();
@@ -48,8 +48,8 @@ MW::MW(QWidget *parent)
 
     menu = menuBar()->addMenu(tr("Connection"));
 
-    act = new QAction(QIcon::fromTheme("network-wired"), tr("&Connect"));
-//    act->setCheckable(true);
+    act = connectAction = new QAction(QIcon::fromTheme("network-wired"), tr("&Connect"));
+    act->setCheckable(true);
     connect(act, &QAction::triggered, this, &MW::onConnect);
     toolBar = addToolBar(tr("Connection"));
     toolBar->addAction(act);
@@ -62,7 +62,12 @@ MW::MW(QWidget *parent)
     connect(timer, &QTimer::timeout, this, &MW::updateTimeLabel);
     timer->start(500);
 
-    initNAM();
+    exchange_info_timer_->setSingleShot(true);
+    exchange_info_timer_->setInterval(500);
+    connect(exchange_info_timer_, &QTimer::timeout, this, &MW::requestExchangeInfo);
+
+    connect(exchangeProtocol, &ExchangeProtocol::networkError, this, &MW::onExchangeProtocolError);
+    connect(exchangeProtocol, &ExchangeProtocol::dataReady, this, &MW::onExchangeProtocolDataReady);
 
     statusBar()->showMessage(tr("Ready"));
 }
@@ -78,133 +83,50 @@ void MW::updateTimeLabel()
             .arg(exchangeInfo.exchangeTimeZone().displayName(QTimeZone::GenericTime, QTimeZone::ShortName)));
 }
 
-void MW::onConnect(bool /*checked*/)
+void MW::onConnect(bool checked)
+{
+    if (checked)
+    {
+        TRACE("") << "Connect to server";
+        requestExchangeInfo();
+    }
+    else
+    {
+        TRACE("") << "Disconnect from server";
+        exchange_info_timer_->stop();
+    }
+}
+
+void MW::requestExchangeInfo()
 {
     TRACE("exchangeInfo...");
 
-    data_.clear();
-
-    reply = nam.get(QNetworkRequest(QUrl("https://fapi.binance.com/fapi/v1/exchangeInfo")));
-    connect(reply, &QNetworkReply::finished, this, &MW::httpFinished);
-    connect(reply, &QIODevice::readyRead, this, &MW::httpReadyRead);
-
-//    if (checked)
-//    {
-//        TRACE("") << "Connect to server";
-//        nam.get(QUrl("https://fapi.binance.com/fapi/v1/exchangeInfo"));
-//    }
-//    else
-//    {
-//        TRACE("") << "Disconnect from server";
-//    }
-}
-
-void MW::initNAM()
-{
-    connect(&nam, &QNetworkAccessManager::authenticationRequired, this, &MW::slotAuthenticationRequired);
-    connect(&nam, &QNetworkAccessManager::sslErrors, this, &MW::sslErrors);
-}
-
-void MW::httpFinished()
-{
-    TRACE("");
-//    QFileInfo fi;
-//    if (file) {
-//        fi.setFile(file->fileName());
-//        file->close();
-//        file.reset();
-//    }
-
-//    if (httpRequestAborted) {
-//        reply->deleteLater();
-//        reply = nullptr;
-//        return;
-//    }
-
-    if (reply->error()) {
-        TRACE("") << "HTTP error";
-        exchangeInfo.clear();
-        data_.clear();
-        reply->deleteLater();
-        reply = nullptr;
-        return;
-    }
-
-    const QVariant redirectionTarget = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-
-    reply->deleteLater();
-    reply = nullptr;
-
-    if (!redirectionTarget.isNull()) {
-        QUrl url;
-        const QUrl redirectedUrl = url.resolved(redirectionTarget.toUrl());
-//        if (QMessageBox::question(this, tr("Redirect"),
-//                                  tr("Redirect to %1 ?").arg(redirectedUrl.toString()),
-//                                  QMessageBox::Yes | QMessageBox::No) == QMessageBox::No) {
-//            QFile::remove(fi.absoluteFilePath());
-//            downloadButton->setEnabled(true);
-//            statusLabel->setText(tr("Download failed:\nRedirect rejected."));
-//            return;
-//        }
-//        file = openFileForWrite(fi.absoluteFilePath());
-//        if (!file) {
-//            downloadButton->setEnabled(true);
-//            return;
-//        }
-//        startRequest(redirectedUrl);
-        TRACE("") << "!!!Redirected to:" << redirectedUrl;
-        return;
-    }
-
-//    statusLabel->setText(tr("Downloaded %1 bytes to %2\nin\n%3")
-//                         .arg(fi.size()).arg(fi.fileName(), QDir::toNativeSeparators(fi.absolutePath())));
-//    if (launchCheckBox->isChecked())
-//        QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
-//    downloadButton->setEnabled(true);
-
-//    {
-//        static int q = 0;
-//        QFile file(QString("exchangeinfo-%1.json").arg(q++));
-//        if (!file.open(QIODevice::WriteOnly))
-//        {
-//            TRACE("") << "IO error:" << file.errorString();
-//        }
-//        if (file.write(data_) < 0)
-//        {
-//            TRACE("") << "IO error:" << file.errorString();
-//        }
-//        file.close();
-//    }
-    if (!exchangeInfo.parse(data_))
+    if (!connectAction->isChecked())
     {
+        TRACE("spuriouse");
+        exchange_info_timer_->stop();
         return;
     }
+    exchangeProtocol->requestExchangeInfo();
 }
 
-void MW::httpReadyRead()
+void MW::onExchangeProtocolError()
 {
-    TRACE("");
-    data_.append(reply->readAll());
+    connectAction->setChecked(false);
+    exchange_info_timer_->stop();
+    exchangeInfo.clear();
 }
 
-void MW::slotAuthenticationRequired(QNetworkReply */*reply*/, QAuthenticator */*authenticator*/)
+void MW::onExchangeProtocolDataReady()
 {
-    TRACE("");
+    QByteArray data(exchangeProtocol->data());
+    exchangeInfo.parse(data);
+
+    exchange_info_timer_->start();
 }
 
-void MW::sslErrors(QNetworkReply *reply, const QList<QSslError> &errors)
+void MW::onTvItemActivated(const QModelIndex &index)
 {
-    QString errorString;
-    for (const QSslError &error : errors) {
-        if (!errorString.isEmpty())
-            errorString += '\n';
-        errorString += error.errorString();
-    }
-
-    if (QMessageBox::warning(this, tr("SSL Errors"),
-                             tr("SSL error has occurred:\n%1").arg(errorString),
-                             QMessageBox::Ignore | QMessageBox::Abort) == QMessageBox::Ignore) {
-        reply->ignoreSslErrors();
-    }
+    TRACE("") << tvMarket->model()->data(index).toString();
 }
 

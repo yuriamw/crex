@@ -5,11 +5,10 @@
 #include <QTreeView>
 #include <QStatusBar>
 #include <QLabel>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QAuthenticator>
 #include <QString>
 #include <QByteArray>
+#include <QTimer>
+#include <QAction>
 
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
@@ -25,23 +24,24 @@ public:
 private:
     void onConnect(bool checked);
 
-    void initNAM();
-
-    void httpFinished();
-    void httpReadyRead();
-    void slotAuthenticationRequired(QNetworkReply *, QAuthenticator *authenticator);
-    void sslErrors(QNetworkReply *reply, const QList<QSslError> &errors);
+    void requestExchangeInfo();
 
     void updateTimeLabel();
 
+private slots:
+    void onExchangeProtocolError();
+    void onExchangeProtocolDataReady();
+
+    void onTvItemActivated(const QModelIndex &index);
+
 private:
+    QAction *connectAction;
     QLabel *exchange_date_time_;
     QTreeView *tvMarket;
-    QNetworkAccessManager nam;
-    QNetworkReply *reply;
-    QByteArray data_;
 
     ExchangeInfo exchangeInfo;
     ExchangeProtocol *exchangeProtocol;
+
+    QTimer *exchange_info_timer_;
 };
 #endif // MW_H
