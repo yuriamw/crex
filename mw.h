@@ -12,6 +12,7 @@
 
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
+#include "exchart.h"
 
 class MW : public QMainWindow
 {
@@ -23,6 +24,7 @@ public:
 
 private:
     void onConnect(bool checked);
+    void onShowChart();
 
     void requestExchangeInfo();
 
@@ -41,6 +43,7 @@ private:
 
     ExchangeInfo exchangeInfo;
     ExchangeProtocol *exchangeProtocol;
+    ExChart *chart_;
 
     QTimer *exchange_info_timer_;
 };

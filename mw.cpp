@@ -25,6 +25,7 @@ MW::MW(QWidget *parent)
     , connectAction(nullptr)
     , exchangeProtocol(new ExchangeProtocol("Binance FUTURES", "https://fapi.binance.com", "fapi/v1", this))
     , exchange_info_timer_(new QTimer(this))
+    , chart_(new ExChart())
 {
     QMenu *menu;
     QAction *act;
@@ -39,10 +40,12 @@ MW::MW(QWidget *parent)
     connect(tvMarket, &QTreeView::activated, this, &MW::onTvItemActivated);
     tvMarket->setModel(exchangeInfo.model());
 
-    QFrame *p = new QFrame();
-    p->setMinimumWidth(300);
-    p->setFrameStyle(QFrame::Panel | QFrame::Raised);
-    lh->addWidget(p);
+//    QFrame *p = new QFrame();
+//    p->setMinimumWidth(300);
+//    p->setFrameStyle(QFrame::Panel | QFrame::Raised);
+//    lh->addWidget(p);
+
+    lh->addWidget(chart_);
 
     setCentralWidget(w);
 
@@ -52,6 +55,13 @@ MW::MW(QWidget *parent)
     act->setCheckable(true);
     connect(act, &QAction::triggered, this, &MW::onConnect);
     toolBar = addToolBar(tr("Connection"));
+    toolBar->addAction(act);
+    menu->addAction(act);
+
+    act = connectAction = new QAction(QIcon::fromTheme("applications-graphics"), tr("Char&t"));
+    act->setCheckable(false);
+    connect(act, &QAction::triggered, this, &MW::onShowChart);
+    toolBar = addToolBar(tr("Chart"));
     toolBar->addAction(act);
     menu->addAction(act);
 
@@ -95,6 +105,10 @@ void MW::onConnect(bool checked)
         TRACE("") << "Disconnect from server";
         exchange_info_timer_->stop();
     }
+}
+
+void MW::onShowChart()
+{
 }
 
 void MW::requestExchangeInfo()

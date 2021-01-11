@@ -1,4 +1,4 @@
-QT       += core gui network
+QT       += core gui network charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     exchangeinfo.cpp \
     exchangeprotocol.cpp \
+    exchart.cpp \
     main.cpp \
     mw.cpp \
     symbol.cpp \
@@ -27,6 +28,7 @@ SOURCES += \
 HEADERS += \
     exchangeinfo.h \
     exchangeprotocol.h \
+    exchart.h \
     logger.h \
     mw.h \
     symbol.h \
