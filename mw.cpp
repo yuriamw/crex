@@ -36,6 +36,7 @@ MW::MW(QWidget *parent)
     w->setLayout(lh);
 
     tvMarket = new QTreeView();
+    tvMarket->setMaximumWidth(160);
     lh->addWidget(tvMarket);
     connect(tvMarket, &QTreeView::activated, this, &MW::onTvItemActivated);
     tvMarket->setModel(exchangeInfo.model());

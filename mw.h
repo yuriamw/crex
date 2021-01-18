@@ -43,8 +43,9 @@ private:
 
     ExchangeInfo exchangeInfo;
     ExchangeProtocol *exchangeProtocol;
-    ExChart *chart_;
 
     QTimer *exchange_info_timer_;
+
+    ExChart *chart_;
 };
 #endif // MW_H
