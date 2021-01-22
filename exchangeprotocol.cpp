@@ -15,7 +15,7 @@ ExchangeProtocol::ExchangeProtocol(const QString & name, const QString &baseUrl,
     , base_url_(baseUrl)
     , path_(path)
 {
-    TRACE("called");
+//    TRACE("called");
 
     initNAM();
 }
