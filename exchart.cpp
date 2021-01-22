@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+
 #include "exchart.h"
 
 #include <QStringList>
@@ -11,6 +13,7 @@
 #include <QDateTimeAxis>
 #include <QValueAxis>
 #include <QFont>
+#include <QPoint>
 //#include <QCursor>
 
 #include <QGraphicsView>
@@ -24,6 +27,7 @@ namespace Defaults {
     static const qint64 WIDTH    = 6;
     static const qint64 SPACING  = 4;
     static const qint64 RMARGIN  = 40;
+    static const qint64 TIMEOUT  = 250;
 
     struct candle_data {
         qreal l;
@@ -32,15 +36,22 @@ namespace Defaults {
         qreal h;
     };
 
+    static const qint64 shifters[] = { 1, 2, 2, 2, 3, 6, 6, 5, 5, 7, 4, 4, 4, 4, 3, 2 };
+
     struct candle_data candlerand()
     {
         qint64 a = 800;
         qint64 b = 1400;
+
+        static qint64 i = 0;
+        qreal s = (shifters[i++] * 100) / 100.0;
+        i %= sizeof(shifters) / sizeof(qint64);
+
         qreal v[4] = {
-            (a + qrand() % (b - a)) / 100.0,
-            (a + qrand() % (b - a)) / 100.0,
-            (a + qrand() % (b - a)) / 100.0,
-            (a + qrand() % (b - a)) / 100.0,
+            (-s + (a + qrand() % (b - a)) / 100.0),
+            (-s + (a + qrand() % (b - a)) / 100.0),
+            (-s + (a + qrand() % (b - a)) / 100.0),
+            (-s + (a + qrand() % (b - a)) / 100.0),
         };
         int min = 0;
         for (int i = 0; i < 4; i++)
@@ -71,6 +82,10 @@ namespace Defaults {
     }
 }
 
+static bool candlestickSetComparator(const QCandlestickSet *a, const QCandlestickSet *b)
+{
+    return a->timestamp() < b->timestamp();
+}
 
 static qint64 column_width()
 {
@@ -78,8 +93,11 @@ static qint64 column_width()
 }
 
 ExChart::ExChart()
+    : scrollFit_(false)
 {
     setMinimumSize(280, 500);
+    setInteractive(true);
+//    setDragMode(QGraphicsView::ScrollHandDrag);
 //    QCursor c = cursor();
 //    setCursor(c);
 
@@ -92,7 +110,7 @@ ExChart::ExChart()
     series->setMinimumColumnWidth(Defaults::WIDTH);
 
 
-    for (size_t i = 0; i < 1024; i++)
+    for (size_t i = 0; i < 256; i++)
     {
         QDateTime now = QDateTime(QDateTime::currentDateTimeUtc().date())/*.addDays(-1)*/;
         QDateTime dt = now.addDays(-i);
@@ -102,29 +120,18 @@ ExChart::ExChart()
 
         series->append(cs);
     }
-//    size_t i = 1;
-//    while (series->count() < 20)
-//    {
-//        qint64 t = 1000000 - 3600 * i;
-//        QCandlestickSet *cs = new QCandlestickSet();
-//        cs->setTimestamp(QDateTime::fromSecsSinceEpoch(t, Qt::UTC).toMSecsSinceEpoch());
-
-//        series->insert(0, cs);
-//        i++;
-//    }
 
     QChart *chart = new QChart();
     chart->addSeries(series);
     chart->setTitle("Data");
 
     QDateTimeAxis *axisX = new QDateTimeAxis();
-    TRACE("") << axisX->tickCount();
     axisX->setFormat("yyyy-MM-dd hh:mm:ss");
     axisX->setLabelsAngle(90);
     chart->addAxis(axisX, Qt::AlignBottom);
 
     QValueAxis *axisY = new QValueAxis();
-    axisY->setRange(7, 15);
+    axisY->setRange(0, 15);
     chart->addAxis(axisY, Qt::AlignRight);
 
     QFont labelFont;
@@ -147,30 +154,160 @@ ExChart::ExChart()
 //    std::cerr << QLocale().name().toStdString() << std::endl;
 }
 
+QMap<QString, QDateTime> ExChart::dataRange()
+{
+    QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
+    QList<QCandlestickSet *> sets = series->sets();
+    QCandlestickSet *min = *std::min_element(sets.begin(), sets.end(), candlestickSetComparator);
+    QCandlestickSet *max = *std::max_element(sets.begin(), sets.end(), candlestickSetComparator);
+    QDateTime minD = QDateTime::fromMSecsSinceEpoch(min->timestamp());
+    QDateTime maxD = QDateTime::fromMSecsSinceEpoch(max->timestamp());
+
+    QMap<QString, QDateTime> map;
+    map["oldest"]   = minD;
+    map["youngest"] = maxD;
+
+    return map;
+}
+
+QDateTime ExChart::oldestData()
+{
+    QMap<QString, QDateTime> map = dataRange();
+    return map["oldest"];
+}
+
+QDateTime ExChart::youngestData()
+{
+    QMap<QString, QDateTime> map = dataRange();
+    return map["youngest"];
+}
+
+void ExChart::scrollWithPixels(QPoint pixels)
+{
+    TRACE("Unexpected event!") << pixels;
+}
+
+void ExChart::scrollWithDegrees(QPoint steps)
+{
+    // Typicaly called by QWheelEvent.
+    // Use steps.y() to scroll by time on axisX
+    // Ignore steps.x()
+    if (steps.y() == 0)
+        return;
+
+    int step = steps.y();
+//    TRACE("") << step;
+
+    QMap<QString, QDateTime> map = dataRange();
+
+    QDateTime minD = map["oldest"];
+    QDateTime maxD = map["youngest"];
+//    TRACE("") << set_count << minD << maxD;
+
+    QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
+    QDateTime minX = axisX->min().addDays(step);
+    QDateTime maxX = axisX->max().addDays(step);
+
+    if (scrollFit())
+    {
+        // Side mergin is 2 ticks
+        if (minX < minD.addDays(-2))
+            return;
+        if (maxX > maxD.addDays(2))
+            return;
+    }
+    else
+    {
+        // Side mergin is size - 3 ticks
+        if (minX > maxD.addDays(-3))
+            return;
+        if (maxX < minD.addDays(3))
+            return;
+    }
+
+    axisX->setRange(minX, maxX);
+//    TRACE("") << axisX->min() << "<->" << axisX->max();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Exvents
 
 void ExChart::resizeEvent(QResizeEvent *event)
 {
-    QDateTime maxD = QDateTime(QDateTime::currentDateTimeUtc().date().addDays(1));
+    QDateTime maxD = youngestData();
+
     QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
-    axisX->setTickCount((width() / column_width()) / 4);
-    axisX->setMin(maxD.addDays(-(axisX->tickCount() + 1)));
-    axisX->setMax(maxD);
-    TRACE("") << axisX->min() << "<->" << axisX->max();
+    axisX->setTickCount((width() / column_width()));
+    axisX->setRange(maxD.addDays(-(axisX->tickCount() + 1)), maxD);
 
     QChartView::resizeEvent(event);
 }
 
+void ExChart::mousePressEvent(QMouseEvent *event)
+{
+//    TRACE("") << event;
+//    if (event->buttons() & Qt::LeftButton)
+//    {
+//        TRACE("move");
+//    }
+    QChartView::mousePressEvent(event);
+}
+
 void ExChart::mouseMoveEvent(QMouseEvent *event)
 {
-    TRACE("") << event;
-    if (event->buttons() & Qt::LeftButton)
-    {
-        TRACE("move");
-    }
+//    TRACE("") << event;
+//    if (event->buttons() & Qt::LeftButton)
+//    {
+//        TRACE("move");
+//    }
     QChartView::mouseMoveEvent(event);
+}
+
+void ExChart::mouseReleaseEvent(QMouseEvent *event)
+{
+//    TRACE("") << event;
+//    if (event->buttons() & Qt::LeftButton)
+//    {
+//        TRACE("move");
+//    }
+    QChartView::mouseReleaseEvent(event);
+}
+
+void ExChart::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
+        axisX->setMinorGridLineVisible(!axisX->isMinorGridLineVisible());
+        axisX->setGridLineVisible(!axisX->isGridLineVisible());
+        event->accept();
+    }
+    else
+        QChartView::mouseDoubleClickEvent(event);
+}
+
+void ExChart::wheelEvent(QWheelEvent *event)
+{
+    QPoint numPixels = event->pixelDelta();
+    QPoint numDegrees = event->angleDelta();
+
+    // QT generates 120, 240 ... for mouse
+    // but 1, 2, 5, 30 ... for touchpad
+    // It is possible for touchpad to generate values > 120
+    // but we ignore this here.
+    // Normalize.
+    if (abs(numDegrees.x()) >= 120 || abs(numDegrees.y()) >= 120)
+        numDegrees /= 8;
+
+    if (!numPixels.isNull()) {
+        scrollWithPixels(numPixels);
+    } else if (!numDegrees.isNull()) {
+        QPoint numSteps = numDegrees / 15;
+        scrollWithDegrees(numSteps);
+    }
+
+    event->accept();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,3 +318,16 @@ void ExChart::onHover(bool status, QCandlestickSet *set)
     TRACE("") << status << QDateTime::fromMSecsSinceEpoch(set->timestamp(), Qt::UTC) << set->open() << set->low() << set->high() << set->close();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Helpers
+
+bool ExChart::scrollFit()
+{
+    return scrollFit_;
+}
+
+void ExChart::setScrollFit(bool fit)
+{
+    scrollFit_ = fit;
+    resize(size());
+}
