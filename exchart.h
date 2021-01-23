@@ -19,6 +19,9 @@ public:
     bool scrollFit();
     void setScrollFit(bool fit);
 
+    qint64 timeFrame(); // seconds
+    bool setTimeFrame(qint64 t); // seconds
+
 private slots:
     void onHover(bool status, QtCharts::QCandlestickSet *set);
 
@@ -37,11 +40,20 @@ private:
     QDateTime youngestData();
     QMap<QString, QDateTime> dataRange();
 
-    void scrollWithPixels(QPoint pixels);
-    void scrollWithDegrees(QPoint steps);
+    qreal minLowValue();
+    qreal maxHighValue();
+
+    void zoomWithPixels(QPoint pixels);
+    void zoomWithDegrees(QPoint steps);
+
+    void scroll(QPoint steps);
+    void scrollHorizontal(QPoint steps);
+    void scrollVertical(QPoint steps);
 
 private:
+    QPoint dragStart_;
     bool scrollFit_;
+    qint64 timeFrame_;
 };
 
 #endif // EXCHART_H
