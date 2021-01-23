@@ -53,7 +53,7 @@ MW::MW(QWidget *parent)
     menu = menuBar()->addMenu(tr("Connection"));
 
     act = connectAction = new QAction(QIcon::fromTheme("network-wired"), tr("&Connect"));
-    act->setCheckable(true);
+//    act->setCheckable(true);
     connect(act, &QAction::triggered, this, &MW::onConnect);
     toolBar = addToolBar(tr("Connection"));
     toolBar->addAction(act);
@@ -96,16 +96,17 @@ void MW::updateTimeLabel()
 
 void MW::onConnect(bool checked)
 {
-    if (checked)
-    {
-        TRACE("") << "Connect to server";
-        requestExchangeInfo();
-    }
-    else
-    {
-        TRACE("") << "Disconnect from server";
-        exchange_info_timer_->stop();
-    }
+//    if (checked)
+//    {
+//        TRACE("") << "Connect to server";
+//        requestExchangeInfo();
+//    }
+//    else
+//    {
+//        TRACE("") << "Disconnect from server";
+//        exchange_info_timer_->stop();
+//    }
+    requestExchangeInfo();
 }
 
 void MW::onShowChart()
@@ -116,12 +117,12 @@ void MW::requestExchangeInfo()
 {
     TRACE("exchangeInfo...");
 
-    if (!connectAction->isChecked())
-    {
-        TRACE("spuriouse");
-        exchange_info_timer_->stop();
-        return;
-    }
+//    if (!connectAction->isChecked())
+//    {
+//        TRACE("spuriouse");
+//        exchange_info_timer_->stop();
+//        return;
+//    }
     exchangeProtocol->requestExchangeInfo();
 }
 
