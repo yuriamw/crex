@@ -152,6 +152,9 @@ ExChart::ExChart()
 //    setDragMode(QGraphicsView::ScrollHandDrag);
 //    QCursor c = cursor();
 //    setCursor(c);
+    QSize si = sizeIncrement();
+    si.setWidth(column_width());
+    setSizeIncrement(si);
 
     QCandlestickSeries *series = new QCandlestickSeries();
 //    series->setName("Candles");
@@ -327,10 +330,14 @@ void ExChart::scrollVertical(QPoint steps)
 void ExChart::resizeEvent(QResizeEvent *event)
 {
     QDateTime maxD = youngestData();
+    QRectF pa = chart()->plotArea();
+    int w = pa.width();
+//    TRACE("") << size() << event->size() << event->oldSize() << pa;
+    int ticks = w / column_width();
 
     QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
-    axisX->setTickCount((width() / column_width()));
-    axisX->setRange(maxD.addSecs(-(axisX->tickCount() + 1) * timeFrame_), maxD);
+    axisX->setTickCount((ticks));
+    axisX->setRange(maxD.addSecs(-(axisX->tickCount()) * timeFrame_), maxD);
 
     QChartView::resizeEvent(event);
 }
