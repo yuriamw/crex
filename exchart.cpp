@@ -12,6 +12,7 @@
 #include <QCandlestickSet>
 #include <QDateTimeAxis>
 #include <QValueAxis>
+#include <QHCandlestickModelMapper>
 #include <QFont>
 #include <QPoint>
 //#include <QCursor>
@@ -23,59 +24,6 @@
 using namespace QtCharts;
 
 namespace Defaults {
-
-    static const qint64 WIDTH    = 6;
-    static const qint64 SPACING  = 4;
-    static const qint64 RMARGIN  = 40;
-    static const qint64 TIMEOUT  = 250;
-    static const qreal  MIN_P    = 0.95; // 5% lower
-    static const qreal  MAX_P    = 1.05; // 5% higher
-
-    typedef qint64 TimeFrameType;
-
-    typedef enum {
-        TF_1m = 0,
-        TF_3m,
-        TF_5m,
-        TF_15m,
-        TF_30m,
-        TF_1h,
-        TF_2h,
-        TF_4h,
-        TF_6h,
-        TF_8h,
-        TF_12h,
-        TF_1d,
-        TF_3d,
-        TF_1w,
-        TF_1M
-    } TimeFrame;
-
-    // This MUST correspond to TimeFrame enum
-    static const TimeFrameType timeFrameSeconds[] = {
-        1 * 60,             //    1m
-        3 * 60,             //    3m
-        5 * 60,             //    5m
-        15 * 60,            //    15m
-        30 * 60,            //    30m
-        1 * 60 * 60,        //    1h
-        2 * 60 * 60,        //    2h
-        4 * 60 * 60,        //    4h
-        6 * 60 * 60,        //    6h
-        8 * 60 * 60,        //    8h
-        12 * 60 * 60,       //    12h
-        1 * 60 * 60 * 24,   //    1d
-        3 * 60 * 60 * 24,   //    3d
-        7 * 60 * 60 * 24,   //    1w
-        30 * 60 * 60 * 24,  //    1M
-    };
-
-    struct candle_data {
-        qreal l;
-        qreal o;
-        qreal c;
-        qreal h;
-    };
 
     static const qint64 shifters[] = { 1, 2, 2, 2, 3, 6, 6, 5, 5, 7, 4, 4, 4, 4, 3, 2 };
 
@@ -117,12 +65,13 @@ namespace Defaults {
         v[3] = v[max];
         v[max] = m;
 
-        struct candle_data d = { v[0], v[1], v[2], v[3] };
+        struct candle_data d = { v[0], v[1], v[2], v[3], 0 };
 
         return d;
     }
 }
 
+#if 0
 static bool candlestickSetTimeComparator(const QCandlestickSet *a, const QCandlestickSet *b)
 {
     return a->timestamp() < b->timestamp();
@@ -137,11 +86,187 @@ static bool candlestickSetLowComparator(const QCandlestickSet *a, const QCandles
 {
     return a->low() < b->low();
 }
+#else
+static bool candlestickTimeComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
+{
+    return a.t < b.t;
+}
+
+static bool candlestickHighComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
+{
+    return a.h < b.h;
+}
+
+static bool candlestickLowComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
+{
+    return a.l < b.l;
+}
+#endif
 
 static qint64 column_width()
 {
     return Defaults::WIDTH + Defaults::SPACING;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// model
+
+ExModel::ExModel(QObject *parent) : QAbstractTableModel(parent)
+{
+    candle_data_.clear();
+    for (size_t i = 0; i < 256; i++)
+    {
+        qint64 timeFrame_ = 3600*24;
+        QDateTime now = QDateTime(QDateTime::currentDateTimeUtc().date())/*.addSecs(-1 * timeFrame_)*/;
+        QDateTime dt = now.addSecs(-i * timeFrame_);
+        struct Defaults::candle_data d = Defaults::candlerand();
+        d.t = dt.toMSecsSinceEpoch();
+
+        candle_data_.append(d);
+    }
+}
+
+int ExModel::rowCount(const QModelIndex &/*parent*/) const
+{
+    return candle_data_.count();
+}
+
+int ExModel::columnCount(const QModelIndex &/*parent*/) const
+{
+    return Defaults::MAX_COLUMN;
+}
+
+QVariant ExModel::data(const QModelIndex &index, int role) const
+{
+    TRACE("") << index;
+    if (role != Qt::DisplayRole)
+        return QVariant();
+    if (!index.isValid())
+        return QVariant();
+
+    struct Defaults::candle_data d = candle_data_.at(index.row());
+    switch (index.column()) {
+        case 0:
+            return d.o;
+        case 1:
+            return d.h;
+        case 2:
+            return d.l;
+        case 3:
+            return d.c;
+        case 4:
+            return d.t;
+        default:
+            TRACE("") << "ERROR column" << index.column();
+            return QVariant();
+    }
+    TRACE("") << "ERROR God sake here we are!!!";
+    return QVariant();
+}
+
+bool ExModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (index.isValid() && role == Qt::EditRole) {
+        if (index.column() >= Defaults::MAX_COLUMN)
+        {
+            TRACE("") << "ERROR column" << index.column();
+            return false;
+        }
+        int r = index.row();
+        switch (index.column()) {
+            case 0:
+                candle_data_[r].o = value.toDouble();
+            break;
+            case 1:
+                candle_data_[r].h = value.toDouble();
+            break;
+            case 2:
+                candle_data_[r].l = value.toDouble();
+            break;
+            case 3:
+                candle_data_[r].c = value.toDouble();
+            break;
+            case 4:
+                candle_data_[r].t = value.toDouble();
+            break;
+        }
+        emit dataChanged(index, index);
+        return true;
+    }
+    return false;
+}
+
+QVariant ExModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+//    TRACE("") << section << role;
+    if (role != Qt::DisplayRole)
+        return QVariant();
+    if (orientation != Qt::Horizontal)
+        return QVariant();
+
+    switch (section) {
+    case 0:
+        return "Open";
+    case 1:
+        return "High";
+    case 2:
+        return "Low";
+    case 3:
+        return "Close";
+    case 4:
+        return "DateTime";
+    default:
+        TRACE("") << "ERROR column" << section;
+        return QVariant();
+    }
+    TRACE("") << "ERROR God sake here we are!!!";
+    return QVariant();
+}
+
+Qt::ItemFlags ExModel::flags(const QModelIndex &index) const
+{
+    return QAbstractTableModel::flags(index) | Qt::ItemIsEditable;
+}
+
+QMap<QString, QDateTime> ExModel::dataRange()
+{
+    if (candle_data_.count() < 1)
+    {
+        QMap<QString, QDateTime> map;
+        map["oldest"]   = QDateTime::fromSecsSinceEpoch(0);
+        map["youngest"] = QDateTime::fromSecsSinceEpoch(0);
+        return map;
+    }
+    QList<Defaults::candle_data>::iterator min = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickTimeComparator);
+    QList<Defaults::candle_data>::iterator max = std::max_element(candle_data_.begin(), candle_data_.end(), candlestickTimeComparator);
+    QDateTime minD = QDateTime::fromMSecsSinceEpoch(min->t);
+    QDateTime maxD = QDateTime::fromMSecsSinceEpoch(max->t);
+
+    QMap<QString, QDateTime> map;
+    map["oldest"]   = minD;
+    map["youngest"] = maxD;
+
+    return map;
+}
+
+qreal ExModel::minLowValue()
+{
+    if (candle_data_.count() < 1)
+        return 0;
+    QList<Defaults::candle_data>::iterator min = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickLowComparator);
+    return min->l;
+}
+
+qreal ExModel::maxHighValue()
+{
+    if (candle_data_.count() < 1)
+        return 0;
+    QList<Defaults::candle_data>::iterator max = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickHighComparator);
+    return max->h;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// ChartView
 
 ExChart::ExChart()
     : scrollFit_(false)
@@ -167,6 +292,21 @@ ExChart::ExChart()
 
     series->pen().setColor(QColor(Qt::magenta));
 
+    model_ = new ExModel(this);
+    QHCandlestickModelMapper *mapper = new QHCandlestickModelMapper(this);
+    mapper->setSeries(series);
+    mapper->setModel(model_);
+
+    mapper->setFirstSetRow(0);
+    mapper->setLastSetRow(model_->rowCount() - 1);
+    mapper->setOpenColumn(0);
+    mapper->setCloseColumn(3);
+    mapper->setHighColumn(1);
+    mapper->setLowColumn(2);
+    mapper->setTimestampColumn(4);
+
+
+#if 0
     for (size_t i = 0; i < 256; i++)
     {
         QDateTime now = QDateTime(QDateTime::currentDateTimeUtc().date())/*.addSecs(-1 * timeFrame_)*/;
@@ -177,6 +317,7 @@ ExChart::ExChart()
 
         series->append(cs);
     }
+#endif
 
     QChart *chart = new QChart();
     chart->addSeries(series);
@@ -214,10 +355,23 @@ ExChart::ExChart()
 //    std::cerr << QLocale().name().toStdString() << std::endl;
 }
 
+QAbstractTableModel *ExChart::model()
+{
+    return model_;
+}
+
+#if 0
 QMap<QString, QDateTime> ExChart::dataRange()
 {
     QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
     QList<QCandlestickSet *> sets = series->sets();
+    if (sets.count() < 1)
+    {
+        QMap<QString, QDateTime> map;
+        map["oldest"]   = QDateTime::fromSecsSinceEpoch(0);
+        map["youngest"] = QDateTime::fromSecsSinceEpoch(0);
+        return map;
+    }
     QCandlestickSet *min = *std::min_element(sets.begin(), sets.end(), candlestickSetTimeComparator);
     QCandlestickSet *max = *std::max_element(sets.begin(), sets.end(), candlestickSetTimeComparator);
     QDateTime minD = QDateTime::fromMSecsSinceEpoch(min->timestamp());
@@ -229,6 +383,12 @@ QMap<QString, QDateTime> ExChart::dataRange()
 
     return map;
 }
+#else
+QMap<QString, QDateTime> ExChart::dataRange()
+{
+    return model_->dataRange();
+}
+#endif
 
 QDateTime ExChart::oldestData()
 {
@@ -242,10 +402,14 @@ QDateTime ExChart::youngestData()
     return map["youngest"];
 }
 
+#if 0
 qreal ExChart::minLowValue()
 {
     QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
     QList<QCandlestickSet *> sets = series->sets();
+    TRACE("") << sets.count();
+    if (sets.count() < 1)
+        return 0;
     QCandlestickSet *set = *std::min_element(sets.begin(), sets.end(), candlestickSetLowComparator);
     return set->low();
 }
@@ -254,9 +418,23 @@ qreal ExChart::maxHighValue()
 {
     QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
     QList<QCandlestickSet *> sets = series->sets();
+    TRACE("") << sets.count();
+    if (sets.count() < 1)
+        return 0;
     QCandlestickSet *set = *std::max_element(sets.begin(), sets.end(), candlestickSetHighComparator);
     return set->high();
 }
+#else
+qreal ExChart::minLowValue()
+{
+    return model_->minLowValue();
+}
+
+qreal ExChart::maxHighValue()
+{
+    return model_->maxHighValue();
+}
+#endif
 
 void ExChart::zoomWithPixels(QPoint pixels)
 {
