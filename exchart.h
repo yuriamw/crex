@@ -27,6 +27,11 @@ namespace Defaults {
     static const qreal  MAX_P    = 1.05; // 5% higher
 
     static const int    MAX_COLUMN = 5;
+    static const int    OPEN_COL   = 0;
+    static const int    CLOSE_COL  = 1;
+    static const int    HIGH_COL   = 2;
+    static const int    LOW_COL    = 3;
+    static const int    TIME_COL   = 4;
 
     typedef qint64 TimeFrameType;
 

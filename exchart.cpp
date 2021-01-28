@@ -138,27 +138,29 @@ int ExModel::columnCount(const QModelIndex &/*parent*/) const
 
 QVariant ExModel::data(const QModelIndex &index, int role) const
 {
-    TRACE("") << index;
-    if (role != Qt::DisplayRole)
+//    TRACE("") << index;
+    if ( !( (role == Qt::DisplayRole) || (role == Qt::EditRole) ) )
         return QVariant();
     if (!index.isValid())
         return QVariant();
+    if (index.column() >= Defaults::MAX_COLUMN)
+    {
+        TRACE("") << "ERROR column" << index.column();
+        return QVariant();
+    }
 
     struct Defaults::candle_data d = candle_data_.at(index.row());
     switch (index.column()) {
-        case 0:
+        case Defaults::OPEN_COL:
             return d.o;
-        case 1:
+        case Defaults::HIGH_COL:
             return d.h;
-        case 2:
+        case Defaults::LOW_COL:
             return d.l;
-        case 3:
+        case Defaults::CLOSE_COL:
             return d.c;
-        case 4:
+        case Defaults::TIME_COL:
             return d.t;
-        default:
-            TRACE("") << "ERROR column" << index.column();
-            return QVariant();
     }
     TRACE("") << "ERROR God sake here we are!!!";
     return QVariant();
@@ -174,19 +176,19 @@ bool ExModel::setData(const QModelIndex &index, const QVariant &value, int role)
         }
         int r = index.row();
         switch (index.column()) {
-            case 0:
+            case Defaults::OPEN_COL:
                 candle_data_[r].o = value.toDouble();
             break;
-            case 1:
+            case Defaults::HIGH_COL:
                 candle_data_[r].h = value.toDouble();
             break;
-            case 2:
+            case Defaults::LOW_COL:
                 candle_data_[r].l = value.toDouble();
             break;
-            case 3:
+            case Defaults::CLOSE_COL:
                 candle_data_[r].c = value.toDouble();
             break;
-            case 4:
+            case Defaults::TIME_COL:
                 candle_data_[r].t = value.toDouble();
             break;
         }
@@ -203,21 +205,23 @@ QVariant ExModel::headerData(int section, Qt::Orientation orientation, int role)
         return QVariant();
     if (orientation != Qt::Horizontal)
         return QVariant();
-
-    switch (section) {
-    case 0:
-        return "Open";
-    case 1:
-        return "High";
-    case 2:
-        return "Low";
-    case 3:
-        return "Close";
-    case 4:
-        return "DateTime";
-    default:
+    if (section >= Defaults::MAX_COLUMN)
+    {
         TRACE("") << "ERROR column" << section;
         return QVariant();
+    }
+
+    switch (section) {
+    case Defaults::OPEN_COL:
+        return "Open";
+    case Defaults::HIGH_COL:
+        return "High";
+    case Defaults::LOW_COL:
+        return "Low";
+    case Defaults::CLOSE_COL:
+        return "Close";
+    case Defaults::TIME_COL:
+        return "DateTime";
     }
     TRACE("") << "ERROR God sake here we are!!!";
     return QVariant();
@@ -261,7 +265,7 @@ qreal ExModel::maxHighValue()
 {
     if (candle_data_.count() < 1)
         return 0;
-    QList<Defaults::candle_data>::iterator max = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickHighComparator);
+    QList<Defaults::candle_data>::iterator max = std::max_element(candle_data_.begin(), candle_data_.end(), candlestickHighComparator);
     return max->h;
 }
 
@@ -299,11 +303,11 @@ ExChart::ExChart()
 
     mapper->setFirstSetRow(0);
     mapper->setLastSetRow(model_->rowCount() - 1);
-    mapper->setOpenColumn(0);
-    mapper->setCloseColumn(3);
-    mapper->setHighColumn(1);
-    mapper->setLowColumn(2);
-    mapper->setTimestampColumn(4);
+    mapper->setOpenColumn(Defaults::OPEN_COL);
+    mapper->setCloseColumn(Defaults::CLOSE_COL);
+    mapper->setHighColumn(Defaults::HIGH_COL);
+    mapper->setLowColumn(Defaults::LOW_COL);
+    mapper->setTimestampColumn(Defaults::TIME_COL);
 
 
 #if 0
