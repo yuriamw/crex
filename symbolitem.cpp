@@ -50,3 +50,4 @@ SymbolItem *SymbolItem::parentItem()
 {
     return m_parentItem;
 }
+

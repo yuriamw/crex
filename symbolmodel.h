@@ -29,6 +29,7 @@ public:
 private:
     void setupModelData(const QList<Symbol> &symbols, SymbolItem *parent);
 
-    SymbolItem *rootItem;};
+    SymbolItem *rootItem;
+};
 
 #endif // SYMBOLMODEL_H

@@ -113,6 +113,14 @@ QVariant SymbolModel::headerData(int section, Qt::Orientation orientation,
 void SymbolModel::insertSymbol(Symbol &symbol/*, const QModelIndex &parent*/)
 {
     int rows = this->rowCount(QModelIndex());
+
+    for (int i = 0; i < rows; i++)
+    {
+        QModelIndex idx = this->index(i, 0);
+        if (symbol.symbol == this->data(idx, Qt::DisplayRole))
+            return;
+    }
+
     beginInsertRows(QModelIndex(), rows, rows + 1);
 
     QList<Symbol> columnData;
