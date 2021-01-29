@@ -54,6 +54,24 @@ void ExchangeProtocol::requestExchangeInfo()
     connect(reply, &QIODevice::readyRead, this, &ExchangeProtocol::httpReadyRead);
 }
 
+ExchangeRequest *ExchangeProtocol::requestExchangeCandledata(const QString &symbol, const QString &timeFrame)
+{
+    ExchangeRequest *rq = new ExchangeRequest(this);
+
+//    klines?symbol=BTCUSDT&interval=1h
+    reply = nam.get(QNetworkRequest(QUrl(QString("%1/%2/%3?symbol=%4&interval=%5")
+                                         .arg(baseUrl())
+                                         .arg(path())
+                                         .arg("klines")
+                                         .arg(symbol)
+                                         .arg(timeFrame)
+                                    )));
+    rq->setReply(reply);
+
+//    requests_.append(rq);
+    return rq;
+}
+
 void ExchangeProtocol::initNAM()
 {
     connect(&nam, &QNetworkAccessManager::authenticationRequired, this, &ExchangeProtocol::slotAuthenticationRequired);

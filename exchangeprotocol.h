@@ -3,10 +3,13 @@
 
 #include <QObject>
 #include <QString>
+#include <QList>
 
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QAuthenticator>
+
+#include "exchange/exchangerequest.h"
 
 class ExchangeProtocol : public QObject
 {
@@ -21,6 +24,7 @@ public:
     const QByteArray & data() const;
 
     void requestExchangeInfo();
+    ExchangeRequest *requestExchangeCandledata(const QString &symbol, const QString &timeFrame);
     void httpFinished();
     void httpReadyRead();
     void slotAuthenticationRequired(QNetworkReply *, QAuthenticator *authenticator);
@@ -38,6 +42,7 @@ private:
     const QString base_url_;
     const QString path_;
 
+    QList<ExchangeRequest *>requests_;
     QNetworkAccessManager nam;
     QNetworkReply *reply;
     QByteArray data_;
