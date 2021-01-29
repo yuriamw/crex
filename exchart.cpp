@@ -3,6 +3,7 @@
 
 #include "exchart.h"
 
+#include <QTimer>
 #include <QStringList>
 #include <QDate>
 #include <QDateTime>
@@ -17,9 +18,15 @@
 #include <QPoint>
 //#include <QCursor>
 
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QJsonArray>
+#include <QJsonObject>
+
 #include <QGraphicsView>
 
 #include "logger.h"
+#include "exchange/exchangerequest.h"
 
 using namespace QtCharts;
 
@@ -71,6 +78,43 @@ namespace Defaults {
     }
 }
 
+// This MUST correspond to TimeFrame enum
+static const Defaults::TimeFrameType timeFrameSeconds[] = {
+    1 * 60,             //    1m
+    3 * 60,             //    3m
+    5 * 60,             //    5m
+    15 * 60,            //    15m
+    30 * 60,            //    30m
+    1 * 60 * 60,        //    1h
+    2 * 60 * 60,        //    2h
+    4 * 60 * 60,        //    4h
+    6 * 60 * 60,        //    6h
+    8 * 60 * 60,        //    8h
+    12 * 60 * 60,       //    12h
+    1 * 60 * 60 * 24,   //    1d
+    3 * 60 * 60 * 24,   //    3d
+    7 * 60 * 60 * 24,   //    1w
+    30 * 60 * 60 * 24,  //    1M
+};
+
+static QMap<Defaults::TimeFrame, QString> timeFrameToStr = {
+    {Defaults::TF_1m,    "1m"},
+    {Defaults::TF_3m,    "3m"},
+    {Defaults::TF_5m,    "5m"},
+    {Defaults::TF_15m,   "15m"},
+    {Defaults::TF_30m,   "30m"},
+    {Defaults::TF_1h,    "1h"},
+    {Defaults::TF_2h,    "2h"},
+    {Defaults::TF_4h,    "4h"},
+    {Defaults::TF_6h,    "6h"},
+    {Defaults::TF_8h,    "8h"},
+    {Defaults::TF_12h,   "12h"},
+    {Defaults::TF_1d,    "1d"},
+    {Defaults::TF_3d,    "3d"},
+    {Defaults::TF_1w,    "1w"},
+    {Defaults::TF_1M,    "1M"},
+};
+
 #if 0
 static bool candlestickSetTimeComparator(const QCandlestickSet *a, const QCandlestickSet *b)
 {
@@ -86,7 +130,8 @@ static bool candlestickSetLowComparator(const QCandlestickSet *a, const QCandles
 {
     return a->low() < b->low();
 }
-#else
+#endif
+
 static bool candlestickTimeComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
 {
     return a.t < b.t;
@@ -101,7 +146,6 @@ static bool candlestickLowComparator(const struct Defaults::candle_data &a, cons
 {
     return a.l < b.l;
 }
-#endif
 
 static qint64 column_width()
 {
@@ -114,16 +158,16 @@ static qint64 column_width()
 ExModel::ExModel(QObject *parent) : QAbstractTableModel(parent)
 {
     candle_data_.clear();
-    for (size_t i = 0; i < 256; i++)
-    {
-        qint64 timeFrame_ = 3600*24;
-        QDateTime now = QDateTime(QDateTime::currentDateTimeUtc().date())/*.addSecs(-1 * timeFrame_)*/;
-        QDateTime dt = now.addSecs(-i * timeFrame_);
-        struct Defaults::candle_data d = Defaults::candlerand();
-        d.t = dt.toMSecsSinceEpoch();
+//    for (size_t i = 0; i < 256; i++)
+//    {
+//        qint64 timeFrame_ = 3600;
+//        QDateTime now = QDateTime(QDateTime::currentDateTimeUtc());
+//        QDateTime dt = now.addSecs(-i * timeFrame_);
+//        struct Defaults::candle_data d = Defaults::candlerand();
+//        d.t = dt.toMSecsSinceEpoch();
 
-        candle_data_.append(d);
-    }
+//        candle_data_.append(d);
+//    }
 }
 
 int ExModel::rowCount(const QModelIndex &/*parent*/) const
@@ -196,6 +240,20 @@ bool ExModel::setData(const QModelIndex &index, const QVariant &value, int role)
         return true;
     }
     return false;
+}
+
+void ExModel::setCandles(QList<Defaults::candle_data> &candles)
+{
+    if (!candles.count())
+        return;
+
+    beginRemoveRows(QModelIndex(), 0, candle_data_.count() - 1);
+    candle_data_.clear();
+    endRemoveRows();
+
+    beginInsertRows(QModelIndex(), 0, candles.count() - 1);
+    candle_data_.append(candles);
+    endInsertRows();
 }
 
 QVariant ExModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -272,9 +330,12 @@ qreal ExModel::maxHighValue()
 ////////////////////////////////////////////////////////////////////////////////
 /// ChartView
 
-ExChart::ExChart()
-    : scrollFit_(false)
-    , timeFrame_(3600*24)
+ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
+    : QChartView(parent)
+    , scrollFit_(false)
+    , timeFrame_(3600)
+    , request_(nullptr)
+    , protocol_(protocol)
 {
 //    setMinimumSize(280, 500);
     setInteractive(true);
@@ -297,31 +358,18 @@ ExChart::ExChart()
     series->pen().setColor(QColor(Qt::magenta));
 
     model_ = new ExModel(this);
-    QHCandlestickModelMapper *mapper = new QHCandlestickModelMapper(this);
-    mapper->setSeries(series);
-    mapper->setModel(model_);
 
-    mapper->setFirstSetRow(0);
-    mapper->setLastSetRow(model_->rowCount() - 1);
-    mapper->setOpenColumn(Defaults::OPEN_COL);
-    mapper->setCloseColumn(Defaults::CLOSE_COL);
-    mapper->setHighColumn(Defaults::HIGH_COL);
-    mapper->setLowColumn(Defaults::LOW_COL);
-    mapper->setTimestampColumn(Defaults::TIME_COL);
+    mapper_ = new QHCandlestickModelMapper(this);
+    mapper_->setSeries(series);
+    mapper_->setModel(model_);
 
-
-#if 0
-    for (size_t i = 0; i < 256; i++)
-    {
-        QDateTime now = QDateTime(QDateTime::currentDateTimeUtc().date())/*.addSecs(-1 * timeFrame_)*/;
-        QDateTime dt = now.addSecs(-i * timeFrame_);
-        struct Defaults::candle_data d = Defaults::candlerand();
-
-        QCandlestickSet *cs = new QCandlestickSet(d.o, d.h, d.l, d.c, dt.toMSecsSinceEpoch());
-
-        series->append(cs);
-    }
-#endif
+    mapper_->setFirstSetRow(0);
+    mapper_->setLastSetRow(model_->rowCount() - 1);
+    mapper_->setOpenColumn(Defaults::OPEN_COL);
+    mapper_->setCloseColumn(Defaults::CLOSE_COL);
+    mapper_->setHighColumn(Defaults::HIGH_COL);
+    mapper_->setLowColumn(Defaults::LOW_COL);
+    mapper_->setTimestampColumn(Defaults::TIME_COL);
 
     QChart *chart = new QChart();
     chart->addSeries(series);
@@ -357,6 +405,8 @@ ExChart::ExChart()
 
 //    std::cerr << QLocale::system().name().toStdString() << std::endl;
 //    std::cerr << QLocale().name().toStdString() << std::endl;
+
+    QTimer::singleShot(1000, this, &ExChart::onTimer);
 }
 
 QAbstractTableModel *ExChart::model()
@@ -364,35 +414,10 @@ QAbstractTableModel *ExChart::model()
     return model_;
 }
 
-#if 0
-QMap<QString, QDateTime> ExChart::dataRange()
-{
-    QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
-    QList<QCandlestickSet *> sets = series->sets();
-    if (sets.count() < 1)
-    {
-        QMap<QString, QDateTime> map;
-        map["oldest"]   = QDateTime::fromSecsSinceEpoch(0);
-        map["youngest"] = QDateTime::fromSecsSinceEpoch(0);
-        return map;
-    }
-    QCandlestickSet *min = *std::min_element(sets.begin(), sets.end(), candlestickSetTimeComparator);
-    QCandlestickSet *max = *std::max_element(sets.begin(), sets.end(), candlestickSetTimeComparator);
-    QDateTime minD = QDateTime::fromMSecsSinceEpoch(min->timestamp());
-    QDateTime maxD = QDateTime::fromMSecsSinceEpoch(max->timestamp());
-
-    QMap<QString, QDateTime> map;
-    map["oldest"]   = minD;
-    map["youngest"] = maxD;
-
-    return map;
-}
-#else
 QMap<QString, QDateTime> ExChart::dataRange()
 {
     return model_->dataRange();
 }
-#endif
 
 QDateTime ExChart::oldestData()
 {
@@ -406,29 +431,6 @@ QDateTime ExChart::youngestData()
     return map["youngest"];
 }
 
-#if 0
-qreal ExChart::minLowValue()
-{
-    QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
-    QList<QCandlestickSet *> sets = series->sets();
-    TRACE("") << sets.count();
-    if (sets.count() < 1)
-        return 0;
-    QCandlestickSet *set = *std::min_element(sets.begin(), sets.end(), candlestickSetLowComparator);
-    return set->low();
-}
-
-qreal ExChart::maxHighValue()
-{
-    QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
-    QList<QCandlestickSet *> sets = series->sets();
-    TRACE("") << sets.count();
-    if (sets.count() < 1)
-        return 0;
-    QCandlestickSet *set = *std::max_element(sets.begin(), sets.end(), candlestickSetHighComparator);
-    return set->high();
-}
-#else
 qreal ExChart::minLowValue()
 {
     return model_->minLowValue();
@@ -438,7 +440,6 @@ qreal ExChart::maxHighValue()
 {
     return model_->maxHighValue();
 }
-#endif
 
 void ExChart::zoomWithPixels(QPoint pixels)
 {
@@ -625,6 +626,99 @@ void ExChart::onHover(bool status, QCandlestickSet *set)
     TRACE("") << status << QDateTime::fromMSecsSinceEpoch(set->timestamp(), Qt::UTC) << set->open() << set->low() << set->high() << set->close();
 }
 
+void ExChart::onTimer()
+{
+    if (request_)
+        return;
+
+    request_ = protocol_->requestExchangeCandledata("BTCUSDT", "1h");
+    connect(request_, &ExchangeRequest::dataReady, this, &ExChart::onCandleDataReady);
+}
+
+void ExChart::onCandleDataReady()
+{
+    if (request_)
+    {
+        QByteArray json_data(request_->data());
+        request_->deleteLater();
+        request_ = nullptr;
+
+        parseJSON(json_data);
+    }
+
+    QTimer::singleShot(550, this, &ExChart::onTimer);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// JSON Parser
+
+void ExChart::parseJSON(QByteArray &json_data)
+{
+#
+    QJsonParseError jsonError;
+    QJsonDocument doc = QJsonDocument::fromJson(json_data, &jsonError);
+    if (doc.isNull())
+    {
+        TRACE("") << "JSON error:" << jsonError.errorString();
+        return;
+    }
+
+//    static int q = 0;
+//    dumpToFile(QString("candle-dump-%1.json").arg(q++), doc);
+
+    if (!doc.isArray())
+    {
+        TRACE("JSON is not array!!!");
+        return;
+    }
+
+    QList<Defaults::candle_data> candles;
+    for (int i = 0; i < doc.array().count(); i++)
+    {
+        if (!doc[i].isArray())
+        {
+            TRACE("JSON candle") << i << "is not array!!!";
+            continue;
+        }
+        candles.append(std::move(parseJSONCandle(doc[i].toArray())));
+    }
+    QCandlestickSeries *s = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
+    QList<QCandlestickSet *> sets = s->sets();
+    model_->setCandles(candles);
+
+    mapper_->setFirstSetRow(0);
+    mapper_->setLastSetRow(model_->rowCount() - 1);
+
+    QDateTime maxD = youngestData();
+    QRectF pa = chart()->plotArea();
+    int w = pa.width();
+    int ticks = w / column_width();
+    QDateTime minD = maxD.addSecs(-ticks * timeFrame_);
+
+    QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
+    axisX->setTickCount((ticks));
+    axisX->setRange(minD, maxD);
+
+    QValueAxis *axisY = qobject_cast<QValueAxis *>(chart()->axes(Qt::Vertical).at(0));
+    qreal minP = minLowValue();
+    qreal maxP = maxHighValue();
+    minP *= Defaults::MIN_P;
+    maxP *= Defaults::MAX_P;
+    axisY->setRange(minP, maxP);
+}
+
+Defaults::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
+{
+//    TRACE("") << json[i];
+    struct Defaults::candle_data d;
+    d.o = json[1].toString().toDouble();
+    d.c = json[4].toString().toDouble();
+    d.h = json[2].toString().toDouble();
+    d.l = json[3].toString().toDouble();
+    d.t = json[0].toDouble();
+    return d;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Helpers
 
@@ -647,9 +741,9 @@ qint64 ExChart::timeFrame()
 bool ExChart::setTimeFrame(qint64 t)
 {
     bool found = false;
-    for (size_t i = 0; i < (sizeof(Defaults::timeFrameSeconds) / sizeof(Defaults::TimeFrameType)); i++)
+    for (size_t i = 0; i < (sizeof(timeFrameSeconds) / sizeof(Defaults::TimeFrameType)); i++)
     {
-        if (t == Defaults::timeFrameSeconds[i])
+        if (t == timeFrameSeconds[i])
         {
             found = true;
             break;

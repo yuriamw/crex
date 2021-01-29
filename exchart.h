@@ -3,6 +3,7 @@
 
 #include <QChartView>
 #include <QCandlestickSet>
+#include <QHCandlestickModelMapper>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QPoint>
@@ -13,6 +14,11 @@
 #include <QAbstractTableModel>
 #include <QModelIndex>
 #include <QVariant>
+
+#include <QJsonArray>
+
+#include "exchange/exchangerequest.h"
+#include "exchangeprotocol.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// model
@@ -53,25 +59,6 @@ namespace Defaults {
         TF_1M
     } TimeFrame;
 
-    // This MUST correspond to TimeFrame enum
-    static const TimeFrameType timeFrameSeconds[] = {
-        1 * 60,             //    1m
-        3 * 60,             //    3m
-        5 * 60,             //    5m
-        15 * 60,            //    15m
-        30 * 60,            //    30m
-        1 * 60 * 60,        //    1h
-        2 * 60 * 60,        //    2h
-        4 * 60 * 60,        //    4h
-        6 * 60 * 60,        //    6h
-        8 * 60 * 60,        //    8h
-        12 * 60 * 60,       //    12h
-        1 * 60 * 60 * 24,   //    1d
-        3 * 60 * 60 * 24,   //    3d
-        7 * 60 * 60 * 24,   //    1w
-        30 * 60 * 60 * 24,  //    1M
-    };
-
     struct candle_data {
         qreal l;
         qreal o;
@@ -93,6 +80,8 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
+    void setCandles(QList<Defaults::candle_data> &candles);
+
 //    QDateTime oldestData();
 //    QDateTime youngestData();
     QMap<QString, QDateTime> dataRange();
@@ -110,7 +99,7 @@ private:
 class ExChart : public QtCharts::QChartView
 {
 public:
-    ExChart();
+    ExChart(ExchangeProtocol *protocol, QWidget *parent = nullptr);
 
     bool scrollFit();
     void setScrollFit(bool fit);
@@ -122,6 +111,8 @@ public:
 
 private slots:
     void onHover(bool status, QtCharts::QCandlestickSet *set);
+    void onTimer();
+    void onCandleDataReady();
 
 protected:
     void mousePressEvent(QMouseEvent *event);
@@ -148,11 +139,17 @@ private:
     void scrollHorizontal(QPoint steps);
     void scrollVertical(QPoint steps);
 
+    void parseJSON(QByteArray &json_data);
+    Defaults::candle_data parseJSONCandle(const QJsonArray &json);
+
 private:
     QPoint dragStart_;
     bool scrollFit_;
     qint64 timeFrame_;
+    QtCharts::QHCandlestickModelMapper *mapper_;
     ExModel *model_;
+    ExchangeRequest *request_;
+    ExchangeProtocol *protocol_;
 };
 
 #endif // EXCHART_H

@@ -25,7 +25,7 @@ MW::MW(QWidget *parent)
     , connectAction(nullptr)
     , exchangeProtocol(new ExchangeProtocol("Binance FUTURES", "https://fapi.binance.com", "fapi/v1", this))
     , exchange_info_timer_(new QTimer(this))
-    , chart_(new ExChart())
+    , chart_(new ExChart(exchangeProtocol))
 {
     QMenu *menu;
     QAction *act;
@@ -74,7 +74,7 @@ MW::MW(QWidget *parent)
     timer->start(500);
 
     exchange_info_timer_->setSingleShot(true);
-    exchange_info_timer_->setInterval(500);
+    exchange_info_timer_->setInterval(5000);
     connect(exchange_info_timer_, &QTimer::timeout, this, &MW::requestExchangeInfo);
 
     connect(exchangeProtocol, &ExchangeProtocol::networkError, this, &MW::onExchangeProtocolError);
@@ -96,16 +96,7 @@ void MW::updateTimeLabel()
 
 void MW::onConnect(bool checked)
 {
-//    if (checked)
-//    {
-//        TRACE("") << "Connect to server";
-//        requestExchangeInfo();
-//    }
-//    else
-//    {
-//        TRACE("") << "Disconnect from server";
-//        exchange_info_timer_->stop();
-//    }
+    Q_UNUSED(checked);
     requestExchangeInfo();
 }
 
