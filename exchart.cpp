@@ -147,7 +147,7 @@ static bool candlestickLowComparator(const struct Defaults::candle_data &a, cons
     return a.l < b.l;
 }
 
-static qint64 column_width()
+static int column_width()
 {
     return Defaults::WIDTH + Defaults::SPACING;
 }
@@ -336,12 +336,19 @@ ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
     , timeFrame_(3600)
     , request_(nullptr)
     , protocol_(protocol)
+    , valid_(false)
+    , autoScale_(true)
+    , timeAxisMin_(QDateTime::fromSecsSinceEpoch(0))
+    , timeAxisMax_(QDateTime::fromSecsSinceEpoch(0))
+    , valAxisMin_(0.0)
+    , valAxisMax_(0.0)
+    , model_(new ExModel(this))
+    , mapper_(new QHCandlestickModelMapper(this))
 {
 //    setMinimumSize(280, 500);
     setInteractive(true);
 //    setDragMode(QGraphicsView::ScrollHandDrag);
-//    QCursor c = cursor();
-//    setCursor(c);
+//    cursor().setShape(Qt::CrossCursor);
     QSize si = sizeIncrement();
     si.setWidth(column_width());
     setSizeIncrement(si);
@@ -357,9 +364,6 @@ ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
 
     series->pen().setColor(QColor(Qt::magenta));
 
-    model_ = new ExModel(this);
-
-    mapper_ = new QHCandlestickModelMapper(this);
     mapper_->setSeries(series);
     mapper_->setModel(model_);
 
@@ -372,11 +376,15 @@ ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
     mapper_->setTimestampColumn(Defaults::TIME_COL);
 
     QChart *chart = new QChart();
+    chart->cursor().setShape(Qt::CrossCursor);
     chart->addSeries(series);
 //    chart->setTitle("Data");
 
     QDateTimeAxis *axisX = new QDateTimeAxis();
-    axisX->setFormat("yyyy-MM-dd hh:mm:ss");
+//    axisX->setFormat("yyyy-MM-dd hh:mm:ss");
+    axisX->setFormat("");
+    axisX->setLabelsVisible(false);
+    axisX->setVisible(false);
 //    axisX->setLabelsAngle(90);
     chart->addAxis(axisX, Qt::AlignBottom);
 
@@ -402,6 +410,16 @@ ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
     axisY->setRange(minP, maxP);
 
     connect(series, &QCandlestickSeries::hovered, this, &ExChart::onHover);
+
+    timeLabel_ = new QGraphicsSimpleTextItem(chart);
+    timeLabel_->setText("0000-00-00 00:00");
+    timeLabel_->setVisible(false);
+
+    timeLine_ = new QGraphicsLineItem(chart);
+    QPen p(timeLine_->pen());
+    p.setStyle(Qt::DotLine);
+    timeLine_->setPen(p);
+    timeLine_->setVisible(false);
 
 //    std::cerr << QLocale::system().name().toStdString() << std::endl;
 //    std::cerr << QLocale().name().toStdString() << std::endl;
@@ -457,6 +475,8 @@ void ExChart::scrollHorizontal(QPoint steps)
     if (!step)
         return;
 
+    setAutoScale(false);
+
     QMap<QString, QDateTime> map = dataRange();
 
     QDateTime minD = map["oldest"];
@@ -470,17 +490,17 @@ void ExChart::scrollHorizontal(QPoint steps)
     if (scrollFit())
     {
         // Side mergin is 2 ticks
-        if (minX < minD.addSecs(-2 * timeFrame_))
+        if (minX < minD.addSecs(-(Defaults::SCROLL_X_MARGIN) * timeFrame_))
             return;
-        if (maxX > maxD.addSecs(2 * timeFrame_))
+        if (maxX > maxD.addSecs((Defaults::SCROLL_X_MARGIN) * timeFrame_))
             return;
     }
     else
     {
         // Side mergin is size - 3 ticks
-        if (minX > maxD.addSecs(-3 * timeFrame_))
+        if (minX > maxD.addSecs(-(Defaults::SCROLL_X_MARGIN + 1) * timeFrame_))
             return;
-        if (maxX < minD.addSecs(3 * timeFrame_))
+        if (maxX < minD.addSecs((Defaults::SCROLL_X_MARGIN + 1) * timeFrame_))
             return;
     }
 
@@ -493,6 +513,8 @@ void ExChart::scrollVertical(QPoint steps)
     qreal diffP = steps.y();
     if (!diffP)
         return;
+
+    setAutoScale(false);
 
     QValueAxis *axisY = qobject_cast<QValueAxis *>(chart()->axes(Qt::Vertical).at(0));
     qreal minY = axisY->min();
@@ -512,15 +534,17 @@ void ExChart::scrollVertical(QPoint steps)
 
 void ExChart::resizeEvent(QResizeEvent *event)
 {
-    QDateTime maxD = youngestData();
-    QRectF pa = chart()->plotArea();
-    int w = pa.width();
-//    TRACE("") << size() << event->size() << event->oldSize() << pa;
-    int ticks = w / column_width();
+//    QDateTime maxD = youngestData();
+//    QRectF pa = chart()->plotArea();
+//    int w = pa.width();
+////    TRACE("") << size() << event->size() << event->oldSize() << pa;
+//    int ticks = w / column_width();
 
-    QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
-    axisX->setTickCount((ticks));
-    axisX->setRange(maxD.addSecs(-(axisX->tickCount()) * timeFrame_), maxD);
+//    QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
+//    axisX->setTickCount((ticks));
+//    axisX->setRange(maxD.addSecs(-(axisX->tickCount()) * timeFrame_), maxD);
+
+    scaleData();
 
     QChartView::resizeEvent(event);
 }
@@ -543,6 +567,9 @@ void ExChart::mousePressEvent(QMouseEvent *event)
 void ExChart::mouseMoveEvent(QMouseEvent *event)
 {
 //    TRACE("") << event->buttons() << "pos:" << event->pos() << "local:" << event->localPos() << "window:" << event->windowPos() << "screen:" << event->screenPos();
+
+    updateTimeLabel(event->localPos());
+
     if (event->buttons() & Qt::LeftButton)
     {
         if (chart()->plotArea().contains(event->localPos()))
@@ -686,25 +713,7 @@ void ExChart::parseJSON(QByteArray &json_data)
     QList<QCandlestickSet *> sets = s->sets();
     model_->setCandles(candles);
 
-    mapper_->setFirstSetRow(0);
-    mapper_->setLastSetRow(model_->rowCount() - 1);
-
-    QDateTime maxD = youngestData();
-    QRectF pa = chart()->plotArea();
-    int w = pa.width();
-    int ticks = w / column_width();
-    QDateTime minD = maxD.addSecs(-ticks * timeFrame_);
-
-    QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
-    axisX->setTickCount((ticks));
-    axisX->setRange(minD, maxD);
-
-    QValueAxis *axisY = qobject_cast<QValueAxis *>(chart()->axes(Qt::Vertical).at(0));
-    qreal minP = minLowValue();
-    qreal maxP = maxHighValue();
-    minP *= Defaults::MIN_P;
-    maxP *= Defaults::MAX_P;
-    axisY->setRange(minP, maxP);
+    scaleData();
 }
 
 Defaults::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
@@ -719,6 +728,81 @@ Defaults::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
     return d;
 }
 
+void ExChart::scaleData()
+{
+    mapper_->setFirstSetRow(0);
+    mapper_->setLastSetRow(model_->rowCount() - 1);
+
+    scaleDataX();
+    scaleDataY();
+}
+
+void ExChart::scaleDataX()
+{
+    QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
+    QDateTime maxD = autoScale_ ? youngestData() : axisX->max();
+
+    QRectF pa = chart()->plotArea();
+    int w = pa.width();
+    int ticks = w / column_width();
+    QDateTime minD = maxD.addSecs(-ticks * timeFrame_);
+
+    axisX->setTickCount((ticks));
+    axisX->setRange(minD, maxD);
+}
+
+void ExChart::scaleDataY()
+{
+    if (autoScale_)
+    {
+        QValueAxis *axisY = qobject_cast<QValueAxis *>(chart()->axes(Qt::Vertical).at(0));
+        qreal minP = minLowValue();
+        qreal maxP = maxHighValue();
+        minP *= Defaults::MIN_P;
+        maxP *= Defaults::MAX_P;
+        axisY->setRange(minP, maxP);
+    }
+}
+
+void ExChart::setAutoScale(bool ascale)
+{
+    autoScale_ = ascale;
+    scaleData();
+}
+
+void ExChart::updateTimeLabel(QPointF localPos)
+{
+    auto const widgetPos = localPos;
+//    TRACE("") << "widgetPos:" << widgetPos;
+    bool vis = chart()->plotArea().contains(widgetPos);
+    timeLabel_->setVisible(vis);
+    timeLine_->setVisible(vis);
+
+    if (vis)
+    {
+        QCandlestickSeries *series = qobject_cast<QCandlestickSeries *>(chart()->series().at(0));
+
+        auto const scenePos = mapToScene(QPoint(static_cast<int>(widgetPos.x()), static_cast<int>(widgetPos.y())));
+        auto const chartItemPos = chart()->mapFromScene(scenePos);
+        QPoint chartRoundPos = chartItemPos.toPoint();
+        chartRoundPos /= column_width();
+        chartRoundPos *=column_width();
+        QPointF const value = chart()->mapToValue(/*chartItemPos*/chartRoundPos, series);
+//        TRACE("") << "scenePos:" << scenePos;
+//        TRACE("") << "chartItemPos:" << chartItemPos;
+//        TRACE("") << "valSeries:" << QDateTime::fromMSecsSinceEpoch(value.x()).toString("yyyy-MM-dd hh:mm:ss");
+
+//        QList<QCandlestickSet *> sets = series->sets();
+//        QPointF timeLinePos = chart()->mapToPosition(value, series);
+//        TRACE("") << timeLinePos;
+
+        timeLabel_->setText(QDateTime::fromMSecsSinceEpoch(value.x()).toString("yyyy-MM-dd hh:mm"));
+        timeLabel_->setPos(widgetPos.x(), chart()->plotArea().height() + chart()->margins().top() + QFontMetrics(timeLabel_->font()).lineSpacing());
+
+//        timeLine_->setLine(widgetPos.x(), chart()->plotArea().top(), widgetPos.x(), chart()->plotArea().top() + chart()->plotArea().height());
+        timeLine_->setLine(chartRoundPos.x() - column_width() / 2, chart()->plotArea().top(), chartRoundPos.x() - column_width() / 2, chart()->plotArea().top() + chart()->plotArea().height());
+    }
+}
 ////////////////////////////////////////////////////////////////////////////////
 /// Helpers
 

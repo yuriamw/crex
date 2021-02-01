@@ -15,6 +15,10 @@
 #include <QModelIndex>
 #include <QVariant>
 
+#include <QGraphicsItem>
+#include <QGraphicsSimpleTextItem>
+#include <QGraphicsLineItem>
+
 #include <QJsonArray>
 
 #include "exchange/exchangerequest.h"
@@ -31,6 +35,8 @@ namespace Defaults {
     static const qint64 TIMEOUT  = 250;
     static const qreal  MIN_P    = 0.95; // 5% lower
     static const qreal  MAX_P    = 1.05; // 5% higher
+
+    static const int    SCROLL_X_MARGIN = 2; // ticks
 
     static const int    MAX_COLUMN = 5;
     static const int    OPEN_COL   = 0;
@@ -142,14 +148,32 @@ private:
     void parseJSON(QByteArray &json_data);
     Defaults::candle_data parseJSONCandle(const QJsonArray &json);
 
+    void scaleData();
+    void scaleDataX();
+    void scaleDataY();
+    void setAutoScale(bool ascale);
+
+    void updateTimeLabel(QPointF localPos);
+
 private:
     QPoint dragStart_;
     bool scrollFit_;
     qint64 timeFrame_;
-    QtCharts::QHCandlestickModelMapper *mapper_;
-    ExModel *model_;
     ExchangeRequest *request_;
     ExchangeProtocol *protocol_;
+
+    bool valid_;
+    bool autoScale_;
+    QDateTime timeAxisMin_;
+    QDateTime timeAxisMax_;
+    qreal valAxisMin_;
+    qreal valAxisMax_;
+
+    QGraphicsSimpleTextItem *timeLabel_;
+    QGraphicsLineItem *timeLine_;
+
+    ExModel *model_;
+    QtCharts::QHCandlestickModelMapper *mapper_;
 };
 
 #endif // EXCHART_H
