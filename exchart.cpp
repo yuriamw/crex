@@ -330,7 +330,7 @@ qreal ExModel::maxHighValue()
 ////////////////////////////////////////////////////////////////////////////////
 /// ChartView
 
-ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
+ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent)
     : QChartView(parent)
     , scrollFit_(false)
     , timeFrame_(3600)
@@ -345,6 +345,8 @@ ExChart::ExChart(ExchangeProtocol *protocol, QWidget *parent)
     , model_(new ExModel(this))
     , mapper_(new QHCandlestickModelMapper(this))
 {
+    setSymbol(std::move(symbol));
+
 //    setMinimumSize(280, 500);
     setInteractive(true);
 //    setDragMode(QGraphicsView::ScrollHandDrag);
@@ -648,6 +650,17 @@ void ExChart::wheelEvent(QWheelEvent *event)
 ////////////////////////////////////////////////////////////////////////////////
 /// Slots
 
+void ExChart::setSymbol(const QString symbol)
+{
+    symbol_.clear();
+    symbol_ = std::move(symbol);
+
+    if (symbol_.isEmpty())
+        setWindowTitle("?");
+    else
+        setWindowTitle(symbol_);
+}
+
 void ExChart::onHover(bool status, QCandlestickSet *set)
 {
     TRACE("") << status << QDateTime::fromMSecsSinceEpoch(set->timestamp(), Qt::UTC) << set->open() << set->low() << set->high() << set->close();
@@ -658,7 +671,10 @@ void ExChart::onTimer()
     if (request_)
         return;
 
-    request_ = protocol_->requestExchangeCandledata("BTCUSDT", "1h");
+    if (symbol_.isEmpty())
+        TRACE("empty");
+
+    request_ = protocol_->requestExchangeCandledata(symbol_, "1h");
     connect(request_, &ExchangeRequest::dataReady, this, &ExChart::onCandleDataReady);
 }
 

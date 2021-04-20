@@ -1,11 +1,16 @@
 #include "mw.h"
 
+#include <QMdiArea>
 #include <QToolBar>
 #include <QAction>
 #include <QIcon>
 #include <QMenu>
 #include <QMenuBar>
 #include <QStringList>
+
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDockWidget>
 
 #include <QTreeView>
 #include <QWidget>
@@ -25,60 +30,17 @@ MW::MW(QWidget *parent)
     , connectAction(nullptr)
     , exchangeProtocol(new ExchangeProtocol("Binance FUTURES", "https://fapi.binance.com", "fapi/v1", this))
     , exchange_info_timer_(new QTimer(this))
-    , chart_(new ExChart(exchangeProtocol))
+    , mdiArea(new QMdiArea(this))
 {
-    QMenu *menu;
-    QAction *act;
-    QToolBar *toolBar;
-
-    QWidget *w = new QWidget();
-    QHBoxLayout *lh = new QHBoxLayout();
-    w->setLayout(lh);
-
-    tvMarket = new QTreeView();
-    tvMarket->setMaximumWidth(160);
-    lh->addWidget(tvMarket);
-    connect(tvMarket, &QTreeView::activated, this, &MW::onTvItemActivated);
-    tvMarket->setModel(exchangeInfo.model());
-
-//    QFrame *p = new QFrame();
-//    p->setMinimumWidth(300);
-//    p->setFrameStyle(QFrame::Panel | QFrame::Raised);
-//    lh->addWidget(p);
-
-    lh->addWidget(chart_);
-
-    setCentralWidget(w);
-
-    menu = menuBar()->addMenu(tr("Connection"));
-
-    act = connectAction = new QAction(QIcon::fromTheme("network-wired"), tr("&Connect"));
-//    act->setCheckable(true);
-    connect(act, &QAction::triggered, this, &MW::onConnect);
-    toolBar = addToolBar(tr("Connection"));
-    toolBar->addAction(act);
-    menu->addAction(act);
-
-    act = connectAction = new QAction(QIcon::fromTheme("applications-graphics"), tr("Char&t"));
-    act->setCheckable(false);
-    connect(act, &QAction::triggered, this, &MW::onShowChart);
-    toolBar = addToolBar(tr("Chart"));
-    toolBar->addAction(act);
-    menu->addAction(act);
+    setCentralWidget(mdiArea);
 
     exchange_date_time_ = new QLabel(tr("no data"));
     statusBar()->addPermanentWidget(exchange_date_time_);
 
-    QTimer *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &MW::updateTimeLabel);
-    timer->start(500);
+    startExchange();
 
-    exchange_info_timer_->setSingleShot(true);
-    exchange_info_timer_->setInterval(5000);
-    connect(exchange_info_timer_, &QTimer::timeout, this, &MW::requestExchangeInfo);
-
-    connect(exchangeProtocol, &ExchangeProtocol::networkError, this, &MW::onExchangeProtocolError);
-    connect(exchangeProtocol, &ExchangeProtocol::dataReady, this, &MW::onExchangeProtocolDataReady);
+    createMenus();
+    createMarketView();
 
     statusBar()->showMessage(tr("Ready"));
 }
@@ -92,6 +54,79 @@ void MW::updateTimeLabel()
     exchange_date_time_->setText(QString("%1 %2")
             .arg(exchangeInfo.exchangeTime().toString("yyyy-MM-dd hh:mm:ss"))
             .arg(exchangeInfo.exchangeTimeZone().displayName(QTimeZone::GenericTime, QTimeZone::ShortName)));
+}
+
+void MW::createMenus()
+{
+//    QMenu *menu;
+    QAction *act;
+
+    act = new QAction(tr("Settings"));
+    connect(act, &QAction::triggered, this, &MW::onSettings);
+    menuBar()->addAction(act);
+
+//    menu = menuBar()->addMenu(tr("Connection"));
+}
+
+void MW::createMarketView()
+{
+    QDockWidget *dw = new QDockWidget(tr("Symbols"), this);
+    dw->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    dw->setAllowedAreas(Qt::LeftDockWidgetArea);
+    dw->setFloating(false);
+    addDockWidget(Qt::LeftDockWidgetArea, dw);
+    tvMarket = new QTreeView();
+    tvMarket->setMaximumWidth(160);
+    tvMarket->setHeaderHidden(true);
+    dw->setWidget(tvMarket);
+    connect(tvMarket, &QTreeView::activated, this, &MW::onTvItemActivated);
+    tvMarket->setModel(exchangeInfo.model());
+}
+
+void MW::createChartWindow(const QString symbol)
+{
+    ExChart *chart = new ExChart(exchangeProtocol, std::move(symbol));
+
+    mdiArea->addSubWindow(chart);
+    chart->show();
+}
+
+void MW::startExchange()
+{
+    QTimer *timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &MW::updateTimeLabel);
+    timer->start(500);
+
+    exchange_info_timer_->setSingleShot(true);
+    exchange_info_timer_->setInterval(5000);
+    connect(exchange_info_timer_, &QTimer::timeout, this, &MW::requestExchangeInfo);
+    exchange_info_timer_->start();
+
+    connect(exchangeProtocol, &ExchangeProtocol::networkError, this, &MW::onExchangeProtocolError);
+    connect(exchangeProtocol, &ExchangeProtocol::dataReady, this, &MW::onExchangeProtocolDataReady);
+
+    requestExchangeInfo();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Slots
+
+void MW::onSettings()
+{
+    QDialog *dialog = new QDialog(this);
+    dialog->setWindowTitle(tr("Settings"));
+
+    QVBoxLayout *l = new QVBoxLayout(dialog);
+
+    l->addWidget(new QLabel("Not yet implemented"));
+
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal);
+    connect(bb, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    l->addWidget(bb);
+
+    dialog->open();
+    TRACE("after dialog");
 }
 
 void MW::onConnect(bool checked)
@@ -108,12 +143,6 @@ void MW::requestExchangeInfo()
 {
     TRACE("exchangeInfo...");
 
-//    if (!connectAction->isChecked())
-//    {
-//        TRACE("spuriouse");
-//        exchange_info_timer_->stop();
-//        return;
-//    }
     exchangeProtocol->requestExchangeInfo();
 }
 
@@ -135,5 +164,6 @@ void MW::onExchangeProtocolDataReady()
 void MW::onTvItemActivated(const QModelIndex &index)
 {
     TRACE("") << tvMarket->model()->data(index).toString();
+    createChartWindow(tvMarket->model()->data(index).toString());
 }
 

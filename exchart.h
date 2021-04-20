@@ -105,7 +105,7 @@ private:
 class ExChart : public QtCharts::QChartView
 {
 public:
-    ExChart(ExchangeProtocol *protocol, QWidget *parent = nullptr);
+    ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
 
     bool scrollFit();
     void setScrollFit(bool fit);
@@ -114,6 +114,9 @@ public:
     bool setTimeFrame(qint64 t); // seconds
 
     QAbstractTableModel *model();
+
+public slots:
+    void setSymbol(const QString symbol);
 
 private slots:
     void onHover(bool status, QtCharts::QCandlestickSet *set);
@@ -161,6 +164,7 @@ private:
     qint64 timeFrame_;
     ExchangeRequest *request_;
     ExchangeProtocol *protocol_;
+    QString symbol_;
 
     bool valid_;
     bool autoScale_;

@@ -2,6 +2,7 @@
 #define MW_H
 
 #include <QMainWindow>
+#include <QMdiArea>
 #include <QTreeView>
 #include <QStatusBar>
 #include <QLabel>
@@ -23,6 +24,13 @@ public:
     ~MW();
 
 private:
+    void createMenus();
+    void createMarketView();
+
+    void createChartWindow(const QString symbol);
+
+    void startExchange();
+
     void onConnect(bool checked);
     void onShowChart();
 
@@ -31,6 +39,8 @@ private:
     void updateTimeLabel();
 
 private slots:
+    void onSettings();
+
     void onExchangeProtocolError();
     void onExchangeProtocolDataReady();
 
@@ -46,6 +56,6 @@ private:
 
     QTimer *exchange_info_timer_;
 
-    ExChart *chart_;
+    QMdiArea *mdiArea;
 };
 #endif // MW_H
