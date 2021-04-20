@@ -20,6 +20,7 @@ SOURCES += \
     exchangeinfo.cpp \
     exchangeprotocol.cpp \
     exchart.cpp \
+    exorderbook.cpp \
     main.cpp \
     mw.cpp \
     symbol.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     exchangeinfo.h \
     exchangeprotocol.h \
     exchart.h \
+    exorderbook.h \
     logger.h \
     mw.h \
     symbol.h \

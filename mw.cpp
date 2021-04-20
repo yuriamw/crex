@@ -83,6 +83,14 @@ void MW::createMarketView()
     tvMarket->setModel(exchangeInfo.model());
 }
 
+void MW::createOrderBookWindow(const QString symbol)
+{
+    ExOrderBook *book = new ExOrderBook(exchangeProtocol, std::move(symbol));
+
+    mdiArea->addSubWindow(book);
+    book->show();
+}
+
 void MW::createChartWindow(const QString symbol)
 {
     ExChart *chart = new ExChart(exchangeProtocol, std::move(symbol));
@@ -163,7 +171,10 @@ void MW::onExchangeProtocolDataReady()
 
 void MW::onTvItemActivated(const QModelIndex &index)
 {
-    TRACE("") << tvMarket->model()->data(index).toString();
-    createChartWindow(tvMarket->model()->data(index).toString());
+    const QString symbol = tvMarket->model()->data(index).toString();
+    TRACE("") << symbol;
+
+    createChartWindow(symbol);
+    createOrderBookWindow(symbol);
 }
 

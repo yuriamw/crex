@@ -13,6 +13,7 @@
 
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
+#include "exorderbook.h"
 #include "exchart.h"
 
 class MW : public QMainWindow
@@ -27,6 +28,7 @@ private:
     void createMenus();
     void createMarketView();
 
+    void createOrderBookWindow(const QString symbol);
     void createChartWindow(const QString symbol);
 
     void startExchange();
