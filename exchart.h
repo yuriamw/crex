@@ -104,6 +104,7 @@ private:
 
 class ExChart : public QtCharts::QChartView
 {
+    Q_OBJECT
 public:
     ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
 

@@ -25,6 +25,7 @@ public:
 
     void requestExchangeInfo();
     ExchangeRequest *requestExchangeCandledata(const QString &symbol, const QString &timeFrame);
+    ExchangeRequest *requestExchangeDepthOfMarket(const QString & symbol, const int limit = 500);
     void httpFinished();
     void httpReadyRead();
     void slotAuthenticationRequired(QNetworkReply *, QAuthenticator *authenticator);

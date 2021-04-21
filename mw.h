@@ -10,11 +10,13 @@
 #include <QByteArray>
 #include <QTimer>
 #include <QAction>
+#include <QMenu>
 
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
 #include "exorderbook.h"
 #include "exchart.h"
+#include "mdichild.h"
 
 class MW : public QMainWindow
 {
@@ -40,13 +42,21 @@ private:
 
     void updateTimeLabel();
 
+    QWidget *activeMdiChild() const;
+    bool hasMdiChild(crex::mdichild::MdiType mditype, const QString & title) const;
+    crex::mdichild::MdiType mdiChildType(QWidget *widget) const;
+
 private slots:
     void onSettings();
+    void onNewChart();
+    void onNewOrderBook();
 
     void onExchangeProtocolError();
     void onExchangeProtocolDataReady();
 
     void onTvItemActivated(const QModelIndex &index);
+
+    void onUpdateWindowMenu();
 
 private:
     QAction *connectAction;
@@ -59,5 +69,6 @@ private:
     QTimer *exchange_info_timer_;
 
     QMdiArea *mdiArea;
+    QMenu *windowMenu;
 };
 #endif // MW_H

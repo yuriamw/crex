@@ -187,7 +187,7 @@ QVariant ExModel::data(const QModelIndex &index, int role) const
         return QVariant();
     if (!index.isValid())
         return QVariant();
-    if (index.column() >= Defaults::MAX_COLUMN)
+    if (index.column() > Defaults::MAX_COLUMN)
     {
         TRACE("") << "ERROR column" << index.column();
         return QVariant();
@@ -697,7 +697,6 @@ void ExChart::onCandleDataReady()
 
 void ExChart::parseJSON(QByteArray &json_data)
 {
-#
     QJsonParseError jsonError;
     QJsonDocument doc = QJsonDocument::fromJson(json_data, &jsonError);
     if (doc.isNull())

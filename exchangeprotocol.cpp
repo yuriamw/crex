@@ -72,6 +72,24 @@ ExchangeRequest *ExchangeProtocol::requestExchangeCandledata(const QString &symb
     return rq;
 }
 
+ExchangeRequest *ExchangeProtocol::requestExchangeDepthOfMarket(const QString & symbol, const int limit)
+{
+    ExchangeRequest *rq = new ExchangeRequest(this);
+
+//    depth?symbol=BTCUSDT&limit=500
+    reply = nam.get(QNetworkRequest(QUrl(QString("%1/%2/%3?symbol=%4&limit=%5")
+                                         .arg(baseUrl())
+                                         .arg(path())
+                                         .arg("depth")
+                                         .arg(symbol)
+                                         .arg(limit)
+                                    )));
+    rq->setReply(reply);
+
+//    requests_.append(rq);
+    return rq;
+}
+
 void ExchangeProtocol::initNAM()
 {
     connect(&nam, &QNetworkAccessManager::authenticationRequired, this, &ExchangeProtocol::slotAuthenticationRequired);
@@ -80,7 +98,7 @@ void ExchangeProtocol::initNAM()
 
 void ExchangeProtocol::httpFinished()
 {
-    TRACE("");
+//    TRACE("");
 //    QFileInfo fi;
 //    if (file) {
 //        fi.setFile(file->fileName());
@@ -153,13 +171,13 @@ void ExchangeProtocol::httpFinished()
 
 void ExchangeProtocol::httpReadyRead()
 {
-    TRACE("");
+//    TRACE("");
     data_.append(reply->readAll());
 }
 
 void ExchangeProtocol::slotAuthenticationRequired(QNetworkReply */*reply*/, QAuthenticator */*authenticator*/)
 {
-    TRACE("");
+//    TRACE("");
     data_.clear();
     emit networkError();
 }

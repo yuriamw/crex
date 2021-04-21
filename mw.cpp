@@ -1,6 +1,7 @@
 #include "mw.h"
 
 #include <QMdiArea>
+#include <QMdiSubWindow>
 #include <QToolBar>
 #include <QAction>
 #include <QIcon>
@@ -24,6 +25,7 @@
 #include "logger.h"
 
 #include "exchangeprotocol.h"
+#include "mdichild.h"
 
 MW::MW(QWidget *parent)
     : QMainWindow(parent)
@@ -58,14 +60,24 @@ void MW::updateTimeLabel()
 
 void MW::createMenus()
 {
-//    QMenu *menu;
+    QMenu *menu;
     QAction *act;
 
     act = new QAction(tr("Settings"));
     connect(act, &QAction::triggered, this, &MW::onSettings);
     menuBar()->addAction(act);
 
-//    menu = menuBar()->addMenu(tr("Connection"));
+    act = new QAction(tr("New Chart"));
+    connect(act, &QAction::triggered, this, &MW::onNewChart);
+    menuBar()->addAction(act);
+
+    act = new QAction(tr("New DOM"));
+    connect(act, &QAction::triggered, this, &MW::onNewOrderBook);
+    menuBar()->addAction(act);
+
+    windowMenu = menu = menuBar()->addMenu(tr("Window"));
+    connect(menu, &QMenu::aboutToShow, this, &MW::onUpdateWindowMenu);
+
 }
 
 void MW::createMarketView()
@@ -85,6 +97,9 @@ void MW::createMarketView()
 
 void MW::createOrderBookWindow(const QString symbol)
 {
+    if (hasMdiChild(crex::mdichild::MdiDOM, symbol))
+        return;
+
     ExOrderBook *book = new ExOrderBook(exchangeProtocol, std::move(symbol));
 
     mdiArea->addSubWindow(book);
@@ -93,6 +108,9 @@ void MW::createOrderBookWindow(const QString symbol)
 
 void MW::createChartWindow(const QString symbol)
 {
+    if (hasMdiChild(crex::mdichild::MdiChart, symbol))
+        return;
+
     ExChart *chart = new ExChart(exchangeProtocol, std::move(symbol));
 
     mdiArea->addSubWindow(chart);
@@ -117,6 +135,47 @@ void MW::startExchange()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// MDI
+
+QWidget *MW::activeMdiChild() const
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow())
+        return activeSubWindow->widget();
+    return nullptr;
+}
+
+bool MW::hasMdiChild(crex::mdichild::MdiType mditype, const QString & title) const
+{
+    QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
+
+    for (int i = 0; i < windows.size(); ++i) {
+        QMdiSubWindow *mdiSubWindow = windows.at(i);
+
+        crex::mdichild::MdiType mt = mdiChildType(mdiSubWindow);
+
+        QWidget *widget = mdiSubWindow->widget();
+
+        if ((widget->windowTitle() == title) && (mt == mditype))
+            return true;
+    }
+    return false;
+}
+
+crex::mdichild::MdiType MW::mdiChildType(QWidget *widget) const
+{
+    ExOrderBook *book = qobject_cast<ExOrderBook *>(widget);
+    ExChart *chart = qobject_cast<ExChart *>(widget);
+
+    crex::mdichild::MdiType mt = crex::mdichild::MdiInvalid;
+    if (chart)
+        mt = crex::mdichild::MdiChart;
+    if (book)
+        mt = crex::mdichild::MdiDOM;
+
+    return mt;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Slots
 
 void MW::onSettings()
@@ -137,6 +196,31 @@ void MW::onSettings()
     TRACE("after dialog");
 }
 
+void MW::onNewChart()
+{
+    QString symbol;
+    QModelIndexList indexes = tvMarket->selectionModel()->selectedIndexes();
+    if (indexes.size() > 0)
+    {
+        QModelIndex selectedIndex = indexes.at(0);
+        symbol = tvMarket->model()->data(selectedIndex).toString();
+    }
+    createChartWindow(symbol);
+}
+
+void MW::onNewOrderBook()
+{
+    QString symbol;
+    QModelIndexList indexes = tvMarket->selectionModel()->selectedIndexes();
+    if (indexes.size() > 0)
+    {
+        QModelIndex selectedIndex = indexes.at(0);
+        symbol = tvMarket->model()->data(selectedIndex).toString();
+    }
+    createOrderBookWindow(symbol);
+}
+
+
 void MW::onConnect(bool checked)
 {
     Q_UNUSED(checked);
@@ -149,7 +233,7 @@ void MW::onShowChart()
 
 void MW::requestExchangeInfo()
 {
-    TRACE("exchangeInfo...");
+//    TRACE("");
 
     exchangeProtocol->requestExchangeInfo();
 }
@@ -178,3 +262,32 @@ void MW::onTvItemActivated(const QModelIndex &index)
     createOrderBookWindow(symbol);
 }
 
+void MW::onUpdateWindowMenu()
+{
+    windowMenu->clear();
+
+    QList<QMdiSubWindow *> windows = mdiArea->subWindowList();
+
+    for (int i = 0; i < windows.size(); ++i) {
+        QMdiSubWindow *mdiSubWindow = windows.at(i);
+        QWidget *child = mdiSubWindow->widget();
+
+        QString text = child->windowTitle();
+        QIcon icon;
+        switch (mdiChildType(child)) {
+            case crex::mdichild::MdiChart:
+                icon = QIcon::fromTheme("graphics");
+                break;
+            case crex::mdichild::MdiDOM:
+                icon = QIcon::fromTheme("mail-task");
+                break;
+            default:
+                icon = QIcon();
+        };
+        QAction *action = windowMenu->addAction(icon, text, mdiSubWindow, [this, mdiSubWindow]() {
+                mdiArea->setActiveSubWindow(mdiSubWindow);
+            });
+        action->setCheckable(true);
+        action ->setChecked(child == activeMdiChild());
+    }
+}

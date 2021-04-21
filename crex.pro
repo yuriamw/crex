@@ -34,6 +34,7 @@ HEADERS += \
     exchart.h \
     exorderbook.h \
     logger.h \
+    mdichild.h \
     mw.h \
     symbol.h \
     symbolitem.h \
