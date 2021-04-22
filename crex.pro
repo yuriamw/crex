@@ -16,6 +16,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    core/core.cpp \
     exchange/exchangerequest.cpp \
     exchangeinfo.cpp \
     exchangeprotocol.cpp \
@@ -28,6 +29,7 @@ SOURCES += \
     symbolmodel.cpp
 
 HEADERS += \
+    core/core.h \
     exchange/exchangerequest.h \
     exchangeinfo.h \
     exchangeprotocol.h \
