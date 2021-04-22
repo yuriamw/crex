@@ -8,6 +8,11 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include <QMenuBar>
+#include <QMenu>
+#include <QToolBar>
+#include <QAction>
+
 #include "logger.h"
 #include "exorderbook.h"
 #include "mdichild.h"
@@ -186,29 +191,65 @@ Qt::ItemFlags ExOrderBookModel::flags(const QModelIndex &index) const
 ////////////////////////////////////////////////////////////////////////////////
 /// OrderBook
 
-ExOrderBook::ExOrderBook(ExchangeProtocol *protocol, const QString symbol, QWidget *parent)
+ExOrderBook::ExOrderBook(ExchangeProtocol *protocol, ExchangeInfo *exinfo, const QString symbol, QWidget *parent)
     : QWidget(parent)
-//    , crex::mdichild::MdiChild(crex::mdichild::MdiDOM, parent)
+    , exchange_symbol_(new QComboBox())
     , orderbook_(new QTableView(this))
     , request_(nullptr)
     , protocol_(protocol)
+    , exchange_info_(exinfo)
+    , timer_(new QTimer(this))
     , model_(new ExOrderBookModel(this))
 
 {
+    setWindowIcon(QIcon::fromTheme("mail-task"));
+
     QVBoxLayout *lv = new QVBoxLayout(this);
+    exchange_symbol_->setModel(exchange_info_->model());
+    connect(exchange_symbol_, &QComboBox::currentTextChanged, this, &ExOrderBook::setSymbol);
+    lv->addWidget(exchange_symbol_);
+
     lv->addWidget(orderbook_);
     orderbook_->setModel(model_);
 
-    setSymbol(symbol);
+    int idx = exchange_symbol_->findText(symbol, Qt::MatchExactly);
+    if (idx >= 0)
+    {
+        exchange_symbol_->setCurrentIndex(idx);
+    }
+    else
+    {
+        exchange_symbol_->setCurrentIndex(-1);
+    }
 
-    QTimer::singleShot(1000, this, &ExOrderBook::onTimer);
+    createMenus(lv);
 
+    timer_->setSingleShot(false);
+    timer_->setInterval(550);
+    connect(timer_, &QTimer::timeout, this, &ExOrderBook::onTimer);
+    timer_->start();
 }
 
-//crex::mdichild::MdiType ExOrderBook::mdiType()
-//{
-//    return MdiChild::mdiType();
-//}
+void ExOrderBook::createMenus(QLayout *layout)
+{
+    QMenuBar *menuBar = new QMenuBar(this);
+    layout->addWidget(menuBar);
+
+    QMenu *menu = menuBar->addMenu("Actions");
+
+    QAction *act = new QAction("First");
+    menu->addAction(act);
+    act = new QAction("Second");
+    menu->addAction(act);
+    act = new QAction("Third");
+    menu->addAction(act);
+
+    menu = menuBar->addMenu("Orders");
+    act = new QAction("Buy");
+    menu->addAction(act);
+    act = new QAction("Sell");
+    menu->addAction(act);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Slots
@@ -226,11 +267,18 @@ void ExOrderBook::setSymbol(const QString symbol)
 
 void ExOrderBook::onTimer()
 {
+
     if (request_)
+    {
+        TRACE("in progress");
         return;
+    }
 
     if (symbol_.isEmpty())
+    {
         TRACE("empty");
+        return;
+    }
 
     request_ = protocol_->requestExchangeDepthOfMarket(symbol_, 5);
     connect(request_, &ExchangeRequest::dataReady, this, &ExOrderBook::onDepthOfMarketDataReady);
@@ -246,8 +294,6 @@ void ExOrderBook::onDepthOfMarketDataReady()
 
         parseJSON(json_data);
     }
-
-    QTimer::singleShot(550, this, &ExOrderBook::onTimer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

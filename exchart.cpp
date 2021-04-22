@@ -8,6 +8,7 @@
 #include <QDate>
 #include <QDateTime>
 
+#include <QIcon>
 #include <QChart>
 #include <QCandlestickSeries>
 #include <QCandlestickSet>
@@ -345,6 +346,8 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
     , model_(new ExModel(this))
     , mapper_(new QHCandlestickModelMapper(this))
 {
+    setWindowIcon(QIcon::fromTheme("graphics"));
+
     setSymbol(std::move(symbol));
 
 //    setMinimumSize(280, 500);

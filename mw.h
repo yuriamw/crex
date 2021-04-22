@@ -23,7 +23,7 @@ class MW : public QMainWindow
     Q_OBJECT
 
 public:
-    MW(QWidget *parent = nullptr);
+    MW(ExchangeProtocol *exprot, ExchangeInfo *exinfo, QWidget *parent = nullptr);
     ~MW();
 
 private:
@@ -33,12 +33,7 @@ private:
     void createOrderBookWindow(const QString symbol);
     void createChartWindow(const QString symbol);
 
-    void startExchange();
-
-    void onConnect(bool checked);
-    void onShowChart();
-
-    void requestExchangeInfo();
+    void startExchangeClock();
 
     void updateTimeLabel();
 
@@ -51,22 +46,16 @@ private slots:
     void onNewChart();
     void onNewOrderBook();
 
-    void onExchangeProtocolError();
-    void onExchangeProtocolDataReady();
-
     void onTvItemActivated(const QModelIndex &index);
 
     void onUpdateWindowMenu();
 
 private:
-    QAction *connectAction;
     QLabel *exchange_date_time_;
     QTreeView *tvMarket;
 
-    ExchangeInfo exchangeInfo;
-    ExchangeProtocol *exchangeProtocol;
-
-    QTimer *exchange_info_timer_;
+    ExchangeInfo *exchange_info_;
+    ExchangeProtocol *exchange_protocol_;
 
     QMdiArea *mdiArea;
     QMenu *windowMenu;

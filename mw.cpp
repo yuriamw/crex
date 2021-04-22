@@ -24,14 +24,14 @@
 
 #include "logger.h"
 
+#include "exchangeinfo.h"
 #include "exchangeprotocol.h"
 #include "mdichild.h"
 
-MW::MW(QWidget *parent)
+MW::MW(ExchangeProtocol *exprot, ExchangeInfo *exinfo, QWidget *parent)
     : QMainWindow(parent)
-    , connectAction(nullptr)
-    , exchangeProtocol(new ExchangeProtocol("Binance FUTURES", "https://fapi.binance.com", "fapi/v1", this))
-    , exchange_info_timer_(new QTimer(this))
+    , exchange_info_(exinfo)
+    , exchange_protocol_(exprot)
     , mdiArea(new QMdiArea(this))
 {
     setCentralWidget(mdiArea);
@@ -39,7 +39,7 @@ MW::MW(QWidget *parent)
     exchange_date_time_ = new QLabel(tr("no data"));
     statusBar()->addPermanentWidget(exchange_date_time_);
 
-    startExchange();
+    startExchangeClock();
 
     createMenus();
     createMarketView();
@@ -54,8 +54,8 @@ MW::~MW()
 void MW::updateTimeLabel()
 {
     exchange_date_time_->setText(QString("%1 %2")
-            .arg(exchangeInfo.exchangeTime().toString("yyyy-MM-dd hh:mm:ss"))
-            .arg(exchangeInfo.exchangeTimeZone().displayName(QTimeZone::GenericTime, QTimeZone::ShortName)));
+            .arg(exchange_info_->exchangeTime().toString("yyyy-MM-dd hh:mm:ss"))
+            .arg(exchange_info_->exchangeTimeZone().displayName(QTimeZone::GenericTime, QTimeZone::ShortName)));
 }
 
 void MW::createMenus()
@@ -67,17 +67,16 @@ void MW::createMenus()
     connect(act, &QAction::triggered, this, &MW::onSettings);
     menuBar()->addAction(act);
 
-    act = new QAction(tr("New Chart"));
-    connect(act, &QAction::triggered, this, &MW::onNewChart);
+    act = new QAction(tr("OrderBook"));
+    connect(act, &QAction::triggered, this, &MW::onNewOrderBook);
     menuBar()->addAction(act);
 
-    act = new QAction(tr("New DOM"));
-    connect(act, &QAction::triggered, this, &MW::onNewOrderBook);
+    act = new QAction(tr("Chart"));
+    connect(act, &QAction::triggered, this, &MW::onNewChart);
     menuBar()->addAction(act);
 
     windowMenu = menu = menuBar()->addMenu(tr("Window"));
     connect(menu, &QMenu::aboutToShow, this, &MW::onUpdateWindowMenu);
-
 }
 
 void MW::createMarketView()
@@ -92,7 +91,7 @@ void MW::createMarketView()
     tvMarket->setHeaderHidden(true);
     dw->setWidget(tvMarket);
     connect(tvMarket, &QTreeView::activated, this, &MW::onTvItemActivated);
-    tvMarket->setModel(exchangeInfo.model());
+    tvMarket->setModel(exchange_info_->model());
 }
 
 void MW::createOrderBookWindow(const QString symbol)
@@ -100,11 +99,11 @@ void MW::createOrderBookWindow(const QString symbol)
     if (hasMdiChild(crex::mdichild::MdiDOM, symbol))
         return;
 
-    ExOrderBook *book = new ExOrderBook(exchangeProtocol, std::move(symbol));
-    book->resize(book->width(), mdiArea->viewport()->size().height());
+    ExOrderBook *book = new ExOrderBook(exchange_protocol_, exchange_info_, std::move(symbol));
 
     mdiArea->addSubWindow(book);
     book->show();
+    book->resize(book->width(), mdiArea->viewport()->size().height());
 }
 
 void MW::createChartWindow(const QString symbol)
@@ -112,27 +111,17 @@ void MW::createChartWindow(const QString symbol)
     if (hasMdiChild(crex::mdichild::MdiChart, symbol))
         return;
 
-    ExChart *chart = new ExChart(exchangeProtocol, std::move(symbol));
+    ExChart *chart = new ExChart(exchange_protocol_, std::move(symbol));
 
     mdiArea->addSubWindow(chart);
     chart->show();
 }
 
-void MW::startExchange()
+void MW::startExchangeClock()
 {
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MW::updateTimeLabel);
     timer->start(500);
-
-    exchange_info_timer_->setSingleShot(true);
-    exchange_info_timer_->setInterval(5000);
-    connect(exchange_info_timer_, &QTimer::timeout, this, &MW::requestExchangeInfo);
-    exchange_info_timer_->start();
-
-    connect(exchangeProtocol, &ExchangeProtocol::networkError, this, &MW::onExchangeProtocolError);
-    connect(exchangeProtocol, &ExchangeProtocol::dataReady, this, &MW::onExchangeProtocolDataReady);
-
-    requestExchangeInfo();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -220,45 +209,12 @@ void MW::onNewOrderBook()
     createOrderBookWindow(symbol);
 }
 
-
-void MW::onConnect(bool checked)
-{
-    Q_UNUSED(checked);
-    requestExchangeInfo();
-}
-
-void MW::onShowChart()
-{
-}
-
-void MW::requestExchangeInfo()
-{
-//    TRACE("");
-
-    exchangeProtocol->requestExchangeInfo();
-}
-
-void MW::onExchangeProtocolError()
-{
-    connectAction->setChecked(false);
-    exchange_info_timer_->stop();
-    exchangeInfo.clear();
-}
-
-void MW::onExchangeProtocolDataReady()
-{
-    QByteArray data(exchangeProtocol->data());
-    exchangeInfo.parse(data);
-
-    exchange_info_timer_->start();
-}
-
 void MW::onTvItemActivated(const QModelIndex &index)
 {
     const QString symbol = tvMarket->model()->data(index).toString();
     TRACE("") << symbol;
 
-    createChartWindow(symbol);
+//    createChartWindow(symbol);
     createOrderBookWindow(symbol);
 }
 
@@ -273,17 +229,8 @@ void MW::onUpdateWindowMenu()
         QWidget *child = mdiSubWindow->widget();
 
         QString text = child->windowTitle();
-        QIcon icon;
-        switch (mdiChildType(child)) {
-            case crex::mdichild::MdiChart:
-                icon = QIcon::fromTheme("graphics");
-                break;
-            case crex::mdichild::MdiDOM:
-                icon = QIcon::fromTheme("mail-task");
-                break;
-            default:
-                icon = QIcon();
-        };
+        QIcon icon = child->windowIcon();
+
         QAction *action = windowMenu->addAction(icon, text, mdiSubWindow, [this, mdiSubWindow]() {
                 mdiArea->setActiveSubWindow(mdiSubWindow);
             });

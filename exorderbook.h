@@ -3,15 +3,20 @@
 
 #include <QWidget>
 #include <QTableView>
+#include <QComboBox>
+#include <QLayout>
 
 #include <QAbstractTableModel>
 #include <QModelIndex>
 #include <QVariant>
 
+#include <QTimer>
+
 #include <QJsonDocument>
 
 #include "exchange/exchangerequest.h"
 #include "exchangeprotocol.h"
+#include "exchangeinfo.h"
 #include "mdichild.h"
 
 namespace orderbook {
@@ -62,7 +67,7 @@ class ExOrderBook : public QWidget//, private crex::mdichild::MdiChild
 {
     Q_OBJECT
 public:
-    explicit ExOrderBook(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
+    explicit ExOrderBook(ExchangeProtocol *protocol, ExchangeInfo *exinfo, const QString symbol, QWidget *parent = nullptr);
 //    crex::mdichild::MdiType mdiType();
 
 public slots:
@@ -80,10 +85,15 @@ private:
     void parseJSON(const QJsonArray &json, QList<orderbook::order> & orders);
     orderbook::order parseJSONOrder(const QJsonArray &json);
 
+    void createMenus(QLayout *layout);
+
 private:
+    QComboBox *exchange_symbol_;
     QTableView *orderbook_;
     ExchangeRequest *request_;
     ExchangeProtocol *protocol_;
+    ExchangeInfo *exchange_info_;
+    QTimer *timer_;
     QString symbol_;
 
     ExOrderBookModel *model_;
