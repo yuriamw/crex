@@ -101,6 +101,7 @@ void MW::createOrderBookWindow(const QString symbol)
         return;
 
     ExOrderBook *book = new ExOrderBook(exchangeProtocol, std::move(symbol));
+    book->resize(book->width(), mdiArea->viewport()->size().height());
 
     mdiArea->addSubWindow(book);
     book->show();
@@ -151,7 +152,7 @@ bool MW::hasMdiChild(crex::mdichild::MdiType mditype, const QString & title) con
     for (int i = 0; i < windows.size(); ++i) {
         QMdiSubWindow *mdiSubWindow = windows.at(i);
 
-        crex::mdichild::MdiType mt = mdiChildType(mdiSubWindow);
+        crex::mdichild::MdiType mt = mdiChildType(mdiSubWindow->widget());
 
         QWidget *widget = mdiSubWindow->widget();
 
@@ -165,7 +166,6 @@ crex::mdichild::MdiType MW::mdiChildType(QWidget *widget) const
 {
     ExOrderBook *book = qobject_cast<ExOrderBook *>(widget);
     ExChart *chart = qobject_cast<ExChart *>(widget);
-
     crex::mdichild::MdiType mt = crex::mdichild::MdiInvalid;
     if (chart)
         mt = crex::mdichild::MdiChart;
