@@ -30,6 +30,7 @@ public:
     QDateTime exchangeTime();
     qlonglong exchangeTimeStamp();
     QTimeZone exchangeTimeZone();
+    const Symbol getSymbol(const QString & symbol) const;
 
     QList<Symbol> symbols;
     QAbstractItemModel *model();

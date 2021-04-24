@@ -67,6 +67,17 @@ void ExchangeInfo::quoteLongInt(QByteArray & data, const QString & key)
     }
 }
 
+const Symbol ExchangeInfo::getSymbol(const QString & symbol) const
+{
+    foreach (auto sym, symbols)
+    {
+        if (sym.symbol == symbol)
+            return sym;
+    }
+
+    return Symbol();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Slots
 
@@ -107,7 +118,7 @@ bool ExchangeInfo::parseJSON(QByteArray & data)
     }
 
 //    static int q = 0;
-//    dumpToFile(QString("exchange-dump-%1.json").arg(q++), doc);
+//    dumpToFile(QString("../exchangeinfo-dump-%1.json").arg(q++), doc);
 
     this->clear();
     return parseJSON(doc.object());

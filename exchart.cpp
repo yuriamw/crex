@@ -709,7 +709,7 @@ void ExChart::parseJSON(QByteArray &json_data)
     }
 
 //    static int q = 0;
-//    dumpToFile(QString("candle-dump-%1.json").arg(q++), doc);
+//    dumpToFile(QString("../candle-dump-%1.json").arg(q++), doc);
 
     if (!doc.isArray())
     {
