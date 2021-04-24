@@ -104,12 +104,11 @@ QVariant ExOrderBookModel::data(const QModelIndex &index, int role) const
     {
         QList<struct orderbook::order>::const_iterator it = cAskOrBid(index.row());
 
-        struct order o = *it;
         switch (index.column()) {
             case PRICE_COL:
-                return o.price;
+                return it->price;
             case QTY_COL:
-                return o.qty;
+                return it->qty;
         }
     }
     TRACE("") << "ERROR God sake here we are!!!";
@@ -383,5 +382,4 @@ orderbook::order ExOrderBook::parseJSONOrder(const QJsonArray &json)
     o.qty   = json[1].toString().toDouble();
     return o;
 }
-
 
