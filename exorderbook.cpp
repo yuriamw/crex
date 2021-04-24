@@ -215,7 +215,12 @@ ExOrderBook::ExOrderBook(ExchangeProtocol *protocol, ExchangeInfo *exinfo, const
     int idx = exchange_symbol_->findText(symbol, Qt::MatchExactly);
     if (idx >= 0)
     {
-        exchange_symbol_->setCurrentIndex(idx);
+        // signal is not emited if (idx == exchange_symbol_->currentIndex())
+        // handle it manualy
+        if (idx == exchange_symbol_->currentIndex())
+            setSymbol(symbol);
+        else
+            exchange_symbol_->setCurrentIndex(idx);
     }
     else
     {
