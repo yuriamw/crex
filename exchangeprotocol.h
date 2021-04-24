@@ -23,7 +23,7 @@ public:
 
     const QByteArray & data() const;
 
-    void requestExchangeInfo();
+    ExchangeRequest *requestExchangeInfo();
     ExchangeRequest *requestExchangeCandledata(const QString &symbol, const QString &timeFrame);
     ExchangeRequest *requestExchangeDepthOfMarket(const QString & symbol, const int limit = 500);
     void httpFinished();
@@ -44,9 +44,7 @@ private:
     const QString path_;
 
     QList<ExchangeRequest *>requests_;
-    QNetworkAccessManager nam;
-    QNetworkReply *reply;
-    QByteArray data_;
+    QNetworkAccessManager nam_;
 };
 
 #endif // EXCHANGEPROTOCOL_H

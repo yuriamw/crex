@@ -269,10 +269,7 @@ void ExOrderBook::onTimer()
 {
 
     if (request_)
-    {
-        TRACE("in progress");
         return;
-    }
 
     if (symbol_.isEmpty())
     {

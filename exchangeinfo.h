@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QByteArray>
+#include <QTimer>
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QList>
@@ -13,15 +14,18 @@
 #include "symbol.h"
 #include "symbolmodel.h"
 
+#include "exchange/exchangerequest.h"
+#include "exchangeprotocol.h"
+
 class ExchangeInfo : public QObject
 {
     Q_OBJECT
 public:
-    explicit ExchangeInfo(QObject *parent = nullptr);
+    explicit ExchangeInfo(ExchangeProtocol *protocol, QObject *parent = nullptr);
 
     void clear();
-    bool parse(QByteArray & data);
-    bool parse(const QJsonObject &json);
+    bool parseJSON(QByteArray & data);
+    bool parseJSON(const QJsonObject &json);
     int size();
     QDateTime exchangeTime();
     qlonglong exchangeTimeStamp();
@@ -32,6 +36,10 @@ public:
 
 signals:
 
+private slots:
+    void onTimer();
+    void onExchangeInfoDataReady();
+
 private:
     void quoteLongInt(QByteArray & data, const QString & key);
     bool dumpToFile(const QString & filename, const QJsonDocument & doc);
@@ -39,6 +47,10 @@ private:
     void setTimeZone(const QString &timezone);
 
 private:
+    ExchangeProtocol *exchange_protocol_;
+    ExchangeRequest *request_;
+    QTimer *timer_;
+
     SymbolModel *model_;
     qlonglong exchange_time_;
     QString exchange_timezone_;

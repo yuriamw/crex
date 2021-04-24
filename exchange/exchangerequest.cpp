@@ -2,7 +2,9 @@
 
 #include "logger.h"
 
-ExchangeRequest::ExchangeRequest(QObject *parent) : QObject(parent)
+ExchangeRequest::ExchangeRequest(QObject *parent)
+    : QObject(parent)
+    , reply_(nullptr)
 {
     data_.clear();
 }
@@ -22,8 +24,8 @@ void ExchangeRequest::setReply(QNetworkReply *rply)
     reply_ = rply;
     connect(reply_, &QNetworkReply::finished, this, &ExchangeRequest::requestFinished);
     connect(reply_, &QIODevice::readyRead, this, &ExchangeRequest::receiveData);
+    connect(reply_, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &ExchangeRequest::requestError);
 }
-
 
 void ExchangeRequest::receiveData()
 {
@@ -57,3 +59,7 @@ void ExchangeRequest::requestFinished()
     emit dataReady();
 }
 
+void ExchangeRequest::requestError(QNetworkReply::NetworkError code)
+{
+    TRACE("") << code;
+}

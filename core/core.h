@@ -2,8 +2,8 @@
 #define CORE_H
 
 #include <QObject>
-#include <QTimer>
 
+#include "exchange/exchangerequest.h"
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
 
@@ -16,19 +16,16 @@ public:
     ExchangeInfo *exchangeInfo();
     ExchangeProtocol *exchangeProtocol();
 
-private:
-    void requestExchangeInfo();
-
 private slots:
     void onExchangeProtocolError();
-    void onExchangeProtocolDataReady();
 
 signals:
 
 private:
-    ExchangeInfo *exchange_info_;
     ExchangeProtocol *exchange_protocol_;
-    QTimer *exchange_info_timer_;
+    ExchangeInfo *exchange_info_;
+
+    ExchangeRequest *exchange_info_request_;
 };
 
 #endif // CORE_H

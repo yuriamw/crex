@@ -29,6 +29,7 @@ signals:
 
 private slots:
     void requestFinished();
+    void requestError(QNetworkReply::NetworkError code);
     void receiveData();
 
 private:

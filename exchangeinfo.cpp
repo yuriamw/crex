@@ -12,15 +12,26 @@
 #include "logger.h"
 
 #include "exchangeinfo.h"
+
+#include "exchange/exchangerequest.h"
+#include "exchangeprotocol.h"
+
 #include "symbolmodel.h"
 
-ExchangeInfo::ExchangeInfo(QObject *parent)
+ExchangeInfo::ExchangeInfo(ExchangeProtocol *protocol, QObject *parent)
     : QObject(parent)
+    , exchange_protocol_(protocol)
+    , request_(nullptr)
+    , timer_(new QTimer(this))
     , model_(new SymbolModel(QList<Symbol>()))
     , exchange_time_(0)
     , exchange_timezone_("-")
 {
 //    TRACE("") << QTimeZone::availableTimeZoneIds();
+    timer_->setSingleShot(false);
+    timer_->setInterval(550);
+    connect(timer_, &QTimer::timeout, this, &ExchangeInfo::onTimer);
+    timer_->start();
 }
 
 QAbstractItemModel *ExchangeInfo::model()
@@ -56,7 +67,34 @@ void ExchangeInfo::quoteLongInt(QByteArray & data, const QString & key)
     }
 }
 
-bool ExchangeInfo::parse(QByteArray & data)
+////////////////////////////////////////////////////////////////////////////////
+/// Slots
+
+void ExchangeInfo::onTimer()
+{
+    if (request_)
+        return;
+
+    request_ = exchange_protocol_->requestExchangeInfo();
+    connect(request_, &ExchangeRequest::dataReady, this, &ExchangeInfo::onExchangeInfoDataReady);
+}
+
+void ExchangeInfo::onExchangeInfoDataReady()
+{
+    if (request_)
+    {
+        QByteArray json_data(request_->data());
+        request_->deleteLater();
+        request_ = nullptr;
+
+        parseJSON(json_data);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// JSON Parser
+
+bool ExchangeInfo::parseJSON(QByteArray & data)
 {
     quoteLongInt(data, "serverTime");
 
@@ -72,7 +110,7 @@ bool ExchangeInfo::parse(QByteArray & data)
 //    dumpToFile(QString("exchange-dump-%1.json").arg(q++), doc);
 
     this->clear();
-    return parse(doc.object());
+    return parseJSON(doc.object());
 }
 
 bool ExchangeInfo::dumpToFile(const QString & filename, const QJsonDocument & doc)
@@ -92,7 +130,7 @@ bool ExchangeInfo::dumpToFile(const QString & filename, const QJsonDocument & do
     return true;
 }
 
-bool ExchangeInfo::parse(const QJsonObject &json)
+bool ExchangeInfo::parseJSON(const QJsonObject &json)
 {
     if (json.contains("serverTime"))
     {
