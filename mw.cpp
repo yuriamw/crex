@@ -102,8 +102,11 @@ void MW::createOrderBookWindow(const QString symbol)
     ExOrderBook *book = new ExOrderBook(exchange_protocol_, exchange_info_, std::move(symbol));
 
     mdiArea->addSubWindow(book);
+    QSize size = book->parentWidget()->size();
+    size.setHeight(mdiArea->viewport()->size().height());
+    book->parentWidget()->resize(size);
+    book->parentWidget()->updateGeometry();
     book->show();
-    book->resize(book->width(), mdiArea->viewport()->size().height());
 }
 
 void MW::createChartWindow(const QString symbol)
