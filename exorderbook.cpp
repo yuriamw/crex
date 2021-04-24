@@ -22,10 +22,19 @@ using namespace orderbook;
 ////////////////////////////////////////////////////////////////////////////////
 /// OrderBookModel
 
-ExOrderBookModel::ExOrderBookModel(QObject *parent) : QAbstractTableModel(parent)
+ExOrderBookModel::ExOrderBookModel(QObject *parent)
+    : QAbstractTableModel(parent)
+    , price_precision_(0)
+    , quantity_precision_(0)
 {
     asks_.clear();
     bids_.clear();
+}
+
+void ExOrderBookModel::setPrecision(int pricePrecision, int quantityPrecision)
+{
+    price_precision_ = pricePrecision;
+    quantity_precision_ = quantityPrecision;
 }
 
 bool ExOrderBookModel::isAsk(int row) const
@@ -106,9 +115,9 @@ QVariant ExOrderBookModel::data(const QModelIndex &index, int role) const
 
         switch (index.column()) {
             case PRICE_COL:
-                return it->price;
+                return QString::number(it->price, 'f', price_precision_);
             case QTY_COL:
-                return it->qty;
+                return QString::number(it->qty, 'f', quantity_precision_);
         }
     }
     TRACE("") << "ERROR God sake here we are!!!";
@@ -205,7 +214,7 @@ ExOrderBook::ExOrderBook(ExchangeProtocol *protocol, ExchangeInfo *exinfo, const
 
     QVBoxLayout *lv = new QVBoxLayout(this);
     exchange_symbol_->setModel(exchange_info_->model());
-    connect(exchange_symbol_, &QComboBox::currentTextChanged, this, &ExOrderBook::setSymbol);
+    connect(exchange_symbol_, &QComboBox::currentTextChanged, this, &ExOrderBook::setSymbolName);
     lv->addWidget(exchange_symbol_);
 
     lv->addWidget(orderbook_);
@@ -217,7 +226,7 @@ ExOrderBook::ExOrderBook(ExchangeProtocol *protocol, ExchangeInfo *exinfo, const
         // signal is not emited if (idx == exchange_symbol_->currentIndex())
         // handle it manualy
         if (idx == exchange_symbol_->currentIndex())
-            setSymbol(symbol);
+            setSymbolName(symbol);
         else
             exchange_symbol_->setCurrentIndex(idx);
     }
@@ -258,15 +267,22 @@ void ExOrderBook::createMenus(QLayout *layout)
 ////////////////////////////////////////////////////////////////////////////////
 /// Slots
 
-void ExOrderBook::setSymbol(const QString symbol)
+void ExOrderBook::setSymbolName(const QString symbol)
+{
+    setSymbol(exchange_info_->getSymbol(symbol));
+
+}
+
+void ExOrderBook::setSymbol(const Symbol symbol)
 {
     symbol_.clear();
     symbol_ = std::move(symbol);
+    model_->setPrecision(symbol.pricePrecision, symbol.quantityPrecision);
 
-    if (symbol_.isEmpty())
+    if (symbol_.symbol.isEmpty())
         setWindowTitle("?");
     else
-        setWindowTitle(symbol_);
+        setWindowTitle(symbol_.symbol);
 }
 
 void ExOrderBook::onTimer()
@@ -275,13 +291,13 @@ void ExOrderBook::onTimer()
     if (request_)
         return;
 
-    if (symbol_.isEmpty())
+    if (symbol_.symbol.isEmpty())
     {
         TRACE("empty");
         return;
     }
 
-    request_ = protocol_->requestExchangeDepthOfMarket(symbol_, 5);
+    request_ = protocol_->requestExchangeDepthOfMarket(symbol_.symbol, 5);
     connect(request_, &ExchangeRequest::dataReady, this, &ExOrderBook::onDepthOfMarketDataReady);
 }
 
@@ -329,7 +345,7 @@ void ExOrderBook::parseJSON(QByteArray &json_data)
     QJsonObject json = doc.object();
 
 //    static int q = 0;
-//    dumpToFile(QString("orderbook-dump-%1.json").arg(q++), doc);
+//    dumpToFile(QString("../orderbook-dump-%1.json").arg(q++), doc);
 
     /*
 {

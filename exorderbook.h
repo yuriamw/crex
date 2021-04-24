@@ -17,6 +17,7 @@
 #include "exchange/exchangerequest.h"
 #include "exchangeprotocol.h"
 #include "exchangeinfo.h"
+#include "symbol.h"
 #include "mdichild.h"
 
 namespace orderbook {
@@ -48,6 +49,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
     void setOrderBook(QList<orderbook::order> &asks, QList<orderbook::order> &bids);
+    void setPrecision(int pricePrecision, int quantityPrecision);
 
 private:
     QList<struct orderbook::order>::iterator askOrBid(int row);
@@ -58,6 +60,9 @@ private:
 private:
     QList<struct orderbook::order> asks_;
     QList<struct orderbook::order> bids_;
+
+    int price_precision_;
+    int quantity_precision_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +76,8 @@ public:
 //    crex::mdichild::MdiType mdiType();
 
 public slots:
-    void setSymbol(const QString symbol);
+    void setSymbol(const Symbol symbol);
+    void setSymbolName(const QString symbol);
 
 signals:
 
@@ -94,7 +100,7 @@ private:
     ExchangeProtocol *protocol_;
     ExchangeInfo *exchange_info_;
     QTimer *timer_;
-    QString symbol_;
+    Symbol symbol_;
 
     ExOrderBookModel *model_;
 };
