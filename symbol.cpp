@@ -16,6 +16,13 @@ Symbol::Symbol() :
 
 }
 
+void Symbol::clear()
+{
+    symbol.clear();
+    baseAsset.clear();
+    quoteAsset.clear();
+}
+
 bool Symbol::read(const QJsonObject &json)
 {
     if (!json.contains("symbol"))

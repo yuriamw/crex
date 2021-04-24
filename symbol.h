@@ -9,6 +9,7 @@ class Symbol
 public:
     Symbol();
 
+    void clear();
     bool read(const QJsonObject &json);
 
 public:
