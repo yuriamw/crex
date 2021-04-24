@@ -18,7 +18,7 @@ public:
     int baseAssetPrecision;
     int quotePrecision;
     int pricePrecision;
-
+    int quantityPrecision;
 };
 
 #endif // SYMBOL_H

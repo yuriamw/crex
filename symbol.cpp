@@ -54,6 +54,7 @@ bool Symbol::read(const QJsonObject &json)
     baseAssetPrecision = json["baseAssetPrecision"].toInt();
     quotePrecision = json["quotePrecision"].toInt();
     pricePrecision = json["pricePrecision"].toInt();
+    quantityPrecision = json["quantityPrecision"].toInt();
 
     return true;
 }
