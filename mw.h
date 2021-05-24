@@ -50,6 +50,8 @@ private slots:
 
     void onUpdateWindowMenu();
 
+    void onSaveMarket();
+
 private:
     QLabel *exchange_date_time_;
     QTreeView *tvMarket;

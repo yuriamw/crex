@@ -102,6 +102,27 @@ void ExchangeInfo::onExchangeInfoDataReady()
     }
 }
 
+void ExchangeInfo::onSaveSymbols(const QString &file)
+{
+    QFile f(file);
+    if (!f.open(QIODevice::WriteOnly))
+    {
+        TRACE("File open error:") << f.errorString();
+        return;
+    }
+    QList<Symbol> sym(symbols);
+    for (int i = 0; i< sym.size(); i++)
+    {
+        QString s(sym.at(i).symbol);
+        s.append("\n");
+        if (!f.write(s.toLatin1()))
+        {
+            TRACE("Failed to write file:") << file << f.errorString();
+            return;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// JSON Parser
 

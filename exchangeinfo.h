@@ -37,6 +37,9 @@ public:
 
 signals:
 
+public slots:
+    void onSaveSymbols(const QString & file);
+
 private slots:
     void onTimer();
     void onExchangeInfoDataReady();

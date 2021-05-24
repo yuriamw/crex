@@ -21,6 +21,7 @@
 #include <QTimer>
 
 #include <QMessageBox>
+#include <QFileDialog>
 
 #include "logger.h"
 
@@ -65,6 +66,10 @@ void MW::createMenus()
 
     act = new QAction(tr("Settings"));
     connect(act, &QAction::triggered, this, &MW::onSettings);
+    menuBar()->addAction(act);
+
+    act = new QAction(tr("Save symbols"));
+    connect(act, &QAction::triggered, this, &MW::onSaveMarket);
     menuBar()->addAction(act);
 
     act = new QAction(tr("OrderBook"));
@@ -240,4 +245,11 @@ void MW::onUpdateWindowMenu()
         action->setCheckable(true);
         action ->setChecked(child == activeMdiChild());
     }
+}
+
+void MW:: onSaveMarket()
+{
+    QString file = QFileDialog::getSaveFileName(this, tr("Save market symbols to file"), "", tr("Text (*.txt)"));
+    exchange_info_->onSaveSymbols(file);
+    TRACE("") << file;
 }
