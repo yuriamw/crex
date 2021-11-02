@@ -26,7 +26,9 @@ SOURCES += \
     mw.cpp \
     symbol.cpp \
     symbolitem.cpp \
-    symbolmodel.cpp
+    symbolmodel.cpp \
+    widgets/excandle.cpp \
+    widgets/exchartwidget.cpp
 
 HEADERS += \
     core/core.h \
@@ -40,7 +42,9 @@ HEADERS += \
     mw.h \
     symbol.h \
     symbolitem.h \
-    symbolmodel.h
+    symbolmodel.h \
+    widgets/excandle.h \
+    widgets/exchartwidget.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
