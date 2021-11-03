@@ -17,6 +17,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     core/core.cpp \
+    data/data.cpp \
+    data/datasim.cpp \
     exchange/exchangerequest.cpp \
     exchangeinfo.cpp \
     exchangeprotocol.cpp \
@@ -32,6 +34,8 @@ SOURCES += \
 
 HEADERS += \
     core/core.h \
+    data/data.h \
+    data/datasim.h \
     exchange/exchangerequest.h \
     exchangeinfo.h \
     exchangeprotocol.h \

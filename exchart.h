@@ -21,6 +21,7 @@
 
 #include <QJsonArray>
 
+#include "data/data.h"
 #include "exchange/exchangerequest.h"
 #include "exchangeprotocol.h"
 
@@ -65,13 +66,6 @@ namespace Defaults {
         TF_1M
     } TimeFrame;
 
-    struct candle_data {
-        qreal l;
-        qreal o;
-        qreal c;
-        qreal h;
-        qreal t;
-    };
 } // namespace Defaults
 
 class ExModel : public QAbstractTableModel
@@ -86,7 +80,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
-    void setCandles(QList<Defaults::candle_data> &candles);
+    void setCandles(QList<crex::data::candle_data> &candles);
 
 //    QDateTime oldestData();
 //    QDateTime youngestData();
@@ -96,7 +90,7 @@ public:
     qreal maxHighValue();
 
 private:
-    QList<struct Defaults::candle_data> candle_data_;
+    QList<struct crex::data::candle_data> candle_data_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -150,7 +144,7 @@ private:
     void scrollVertical(QPoint steps);
 
     void parseJSON(QByteArray &json_data);
-    Defaults::candle_data parseJSONCandle(const QJsonArray &json);
+    crex::data::candle_data parseJSONCandle(const QJsonArray &json);
 
     void scaleData();
     void scaleDataX();

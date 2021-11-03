@@ -35,7 +35,7 @@ namespace Defaults {
 
     static const qint64 shifters[] = { 1, 2, 2, 2, 3, 6, 6, 5, 5, 7, 4, 4, 4, 4, 3, 2 };
 
-    struct candle_data candlerand()
+    struct crex::data::candle_data candlerand()
     {
         qint64 a = 800;
         qint64 b = 1400;
@@ -73,7 +73,7 @@ namespace Defaults {
         v[3] = v[max];
         v[max] = m;
 
-        struct candle_data d = { v[0], v[1], v[2], v[3], 0 };
+        struct crex::data::candle_data d = { v[0], v[1], v[2], v[3], 0 };
 
         return d;
     }
@@ -133,17 +133,17 @@ static bool candlestickSetLowComparator(const QCandlestickSet *a, const QCandles
 }
 #endif
 
-static bool candlestickTimeComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
+static bool candlestickTimeComparator(const struct crex::data::candle_data &a, const struct crex::data::candle_data &b)
 {
     return a.t < b.t;
 }
 
-static bool candlestickHighComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
+static bool candlestickHighComparator(const struct crex::data::candle_data &a, const struct crex::data::candle_data &b)
 {
     return a.h < b.h;
 }
 
-static bool candlestickLowComparator(const struct Defaults::candle_data &a, const struct Defaults::candle_data &b)
+static bool candlestickLowComparator(const struct crex::data::candle_data &a, const struct crex::data::candle_data &b)
 {
     return a.l < b.l;
 }
@@ -164,7 +164,7 @@ ExModel::ExModel(QObject *parent) : QAbstractTableModel(parent)
 //        qint64 timeFrame_ = 3600;
 //        QDateTime now = QDateTime(QDateTime::currentDateTimeUtc());
 //        QDateTime dt = now.addSecs(-i * timeFrame_);
-//        struct Defaults::candle_data d = Defaults::candlerand();
+//        struct crex::data::candle_data d = Defaults::candlerand();
 //        d.t = dt.toMSecsSinceEpoch();
 
 //        candle_data_.append(d);
@@ -194,7 +194,7 @@ QVariant ExModel::data(const QModelIndex &index, int role) const
         return QVariant();
     }
 
-    struct Defaults::candle_data d = candle_data_.at(index.row());
+    struct crex::data::candle_data d = candle_data_.at(index.row());
     switch (index.column()) {
         case Defaults::OPEN_COL:
             return d.o;
@@ -243,7 +243,7 @@ bool ExModel::setData(const QModelIndex &index, const QVariant &value, int role)
     return false;
 }
 
-void ExModel::setCandles(QList<Defaults::candle_data> &candles)
+void ExModel::setCandles(QList<crex::data::candle_data> &candles)
 {
     if (!candles.count())
         return;
@@ -300,8 +300,8 @@ QMap<QString, QDateTime> ExModel::dataRange()
         map["youngest"] = QDateTime::fromSecsSinceEpoch(0);
         return map;
     }
-    QList<Defaults::candle_data>::iterator min = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickTimeComparator);
-    QList<Defaults::candle_data>::iterator max = std::max_element(candle_data_.begin(), candle_data_.end(), candlestickTimeComparator);
+    QList<crex::data::candle_data>::iterator min = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickTimeComparator);
+    QList<crex::data::candle_data>::iterator max = std::max_element(candle_data_.begin(), candle_data_.end(), candlestickTimeComparator);
     QDateTime minD = QDateTime::fromMSecsSinceEpoch(min->t);
     QDateTime maxD = QDateTime::fromMSecsSinceEpoch(max->t);
 
@@ -316,7 +316,7 @@ qreal ExModel::minLowValue()
 {
     if (candle_data_.count() < 1)
         return 0;
-    QList<Defaults::candle_data>::iterator min = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickLowComparator);
+    QList<crex::data::candle_data>::iterator min = std::min_element(candle_data_.begin(), candle_data_.end(), candlestickLowComparator);
     return min->l;
 }
 
@@ -324,7 +324,7 @@ qreal ExModel::maxHighValue()
 {
     if (candle_data_.count() < 1)
         return 0;
-    QList<Defaults::candle_data>::iterator max = std::max_element(candle_data_.begin(), candle_data_.end(), candlestickHighComparator);
+    QList<crex::data::candle_data>::iterator max = std::max_element(candle_data_.begin(), candle_data_.end(), candlestickHighComparator);
     return max->h;
 }
 
@@ -717,7 +717,7 @@ void ExChart::parseJSON(QByteArray &json_data)
         return;
     }
 
-    QList<Defaults::candle_data> candles;
+    QList<crex::data::candle_data> candles;
     for (int i = 0; i < doc.array().count(); i++)
     {
         if (!doc[i].isArray())
@@ -734,10 +734,10 @@ void ExChart::parseJSON(QByteArray &json_data)
     scaleData();
 }
 
-Defaults::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
+crex::data::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
 {
 //    TRACE("") << json[i];
-    struct Defaults::candle_data d;
+    struct crex::data::candle_data d;
     d.o = json[1].toString().toDouble();
     d.c = json[4].toString().toDouble();
     d.h = json[2].toString().toDouble();

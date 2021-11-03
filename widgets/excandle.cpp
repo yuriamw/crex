@@ -28,7 +28,7 @@ void ExCandle::setCandle(qreal open, qreal close, qreal high, qreal low)
 
     QBrush brush;
     QPen pen;
-    QColor color(open > close ? Qt::red : Qt::green);
+    QColor color(open > close ? Qt::red : Qt::darkGreen);
 
     brush.setStyle( Qt::SolidPattern);
     brush.setColor(color);
