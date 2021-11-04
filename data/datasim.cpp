@@ -1,5 +1,10 @@
 #include "datasim.h"
 
+#include <sys/time.h>
+
+#include <vector>
+#include <deque>
+
 #include "logger.h"
 
 namespace crex::data {
@@ -57,6 +62,131 @@ QVector<crex::data::candle_data> DataSim::getTriangle(int wavelen, int waves, bo
     }
 
     return vector;
+}
+
+void DataSim::mesureVector(long long int count)
+{
+    struct timeval tv1, tv2;
+
+    crex::data::candle_data candle = {0.0, 0.0, 0.0, 0.0, 0.0};
+    std::vector<crex::data::candle_data> vector;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    TRACE("TEST vector.push_back");
+    vector.clear();
+    if (gettimeofday(&tv1, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for start");
+        return;
+    }
+
+    for (long long int i = 0; i < count; i++)
+    {
+        candle.o++;
+        vector.push_back(candle);
+    }
+
+    if (gettimeofday(&tv2, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for end");
+        return;
+    }
+    TRACE("DONE vector.push_back for") << count << "START:" << tv1.tv_sec << "END" << tv2.tv_sec << "TIME:" << tv2.tv_sec - tv1.tv_sec;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    TRACE("TEST vector.erase(begin)");
+    if (gettimeofday(&tv1, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for start");
+        return;
+    }
+
+    for (long long int i = 0; i < count; i++)
+    {
+        vector.erase(vector.begin());
+    }
+
+    if (gettimeofday(&tv2, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for end");
+        return;
+    }
+    TRACE("DONE vector.erase(begin) for") << count << "START:" << tv1.tv_sec << "END" << tv2.tv_sec << "TIME:" << tv2.tv_sec - tv1.tv_sec;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+}
+
+void DataSim::mesureDeque(long long int count)
+{
+    struct timeval tv1, tv2;
+
+    crex::data::candle_data candle = {0.0, 0.0, 0.0, 0.0, 0.0};
+    std::deque<crex::data::candle_data> deque;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    TRACE("TEST deque.push_back");
+    deque.clear();
+    if (gettimeofday(&tv1, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for start");
+        return;
+    }
+
+    for (long long int i = 0; i < count; i++)
+    {
+        candle.o++;
+        deque.push_back(candle);
+    }
+
+    if (gettimeofday(&tv2, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for end");
+        return;
+    }
+    TRACE("DONE deque.push_back for") << count << "START:" << tv1.tv_sec << "END" << tv2.tv_sec << "TIME:" << tv2.tv_sec - tv1.tv_sec;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    TRACE("TEST deque[i]++");
+    if (gettimeofday(&tv1, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for start");
+        return;
+    }
+
+    for (long long int i = 0; i < (count / 2); i++)
+    {
+        deque[i].o++;
+        deque[count - i - 1].o++;
+    }
+
+    if (gettimeofday(&tv2, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for end");
+        return;
+    }
+    TRACE("DONE deque[i]++ for") << count << "START:" << tv1.tv_sec << "END" << tv2.tv_sec << "TIME:" << tv2.tv_sec - tv1.tv_sec;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    TRACE("TEST deque.pop_front");
+    if (gettimeofday(&tv1, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for start");
+        return;
+    }
+
+    for (long long int i = 0; i < count; i++)
+    {
+        deque.pop_front();
+    }
+
+    if (gettimeofday(&tv2, nullptr))
+    {
+        TRACE("ERROR: gettimeofday failed for end");
+        return;
+    }
+    TRACE("DONE deque.pop_front for") << count << "START:" << tv1.tv_sec << "END" << tv2.tv_sec << "TIME:" << tv2.tv_sec - tv1.tv_sec;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
 }
 
 } // namespace crex::data
