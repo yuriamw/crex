@@ -12,32 +12,46 @@ ExChartWidget::ExChartWidget(QObject *parent)
     , scene_(new QGraphicsScene())
     , view_(new QGraphicsView(scene_))
 {
-
     const auto scene_width = 600.0;
     const auto scene_height = 400.0;
-    const auto candle_width = crex::candle::ExCandle::width() + 1;
-//    const auto margin = 20 + candle_width;
+
+    scene_->setSceneRect(0, 0, scene_width, scene_height);
 
     view_->setCursor(Qt::CrossCursor);
     QPen pen;
     pen.setStyle(Qt::DashLine);
     pen.setColor(Qt::gray);
-    vertical_cursor_ = new QGraphicsLineItem(scene_width - 5, 0, scene_width - 5, scene_height);
+    vertical_cursor_ = new QGraphicsLineItem(scene_->width(), 0, scene_->width(), scene_->height());
     vertical_cursor_->setPen(pen);
     scene_->addItem(vertical_cursor_);
-    horizontal_cursor_ = new QGraphicsLineItem(0, 5, scene_width, 5);
+    horizontal_cursor_ = new QGraphicsLineItem(0, 0, scene_->width(), 0);
     horizontal_cursor_->setPen(pen);
     scene_->addItem(horizontal_cursor_);
-
-//    QGraphicsLineItem *line = new QGraphicsLineItem((scene_width - margin), 0, (scene_width - margin), scene_height);
-//    scene_->addItem(line);
-
-    scene_->setSceneRect(0, 0, scene_width, scene_height);
 
 //    view_->setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
 
     // Simulate candle data
     simulateDataLine();
+}
+
+QGraphicsScene *ExChartWidget::scene()
+{
+    return scene_;
+}
+
+QGraphicsView *ExChartWidget::view()
+{
+    return view_;
+}
+
+void ExChartWidget::simulateDataLine()
+{
+    candles_ = crex::data::DataSim::getTriangle(32, 4);
+
+    const auto scene_width = scene_->width();
+    const auto scene_height = scene_->height();
+    const auto candle_width = crex::candle::ExCandle::width() + 1;
+
     int min = 0;
     int max = 0;
     for (int i = 1; i < candles_.size(); i++)
@@ -58,30 +72,15 @@ ExChartWidget::ExChartWidget(QObject *parent)
     }
 }
 
-QGraphicsScene *ExChartWidget::scene()
-{
-    return scene_;
-}
-
-QGraphicsView *ExChartWidget::view()
-{
-    return view_;
-}
-
-void ExChartWidget::simulateDataLine()
-{
-    candles_ = crex::data::DataSim::getTriangle(32, 4);
-}
-
 // Protected Events
 
-void ExChartWidget::mouseMoveEvent(QMouseEvent *event)
-{
-    if (!event->buttons())
-    {
-        moveCursorLines(event->x(), event->y());
-    }
-}
+//void ExChartWidget::mouseMoveEvent(QMouseEvent *event)
+//{
+//    if (!event->buttons())
+//    {
+//        moveCursorLines(event->x(), event->y());
+//    }
+//}
 
 // Cursor
 

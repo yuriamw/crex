@@ -25,7 +25,7 @@ private:
     void moveCursorLines(int x, int y);
 
 protected:
-    void mouseMoveEvent(QMouseEvent *event) override;
+//    void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
     QGraphicsScene *scene_;
