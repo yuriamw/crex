@@ -1,7 +1,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "exchart.h"
+#include "exqchart.h"
 
 #include <QTimer>
 #include <QStringList>
@@ -331,7 +331,7 @@ qreal ExModel::maxHighValue()
 ////////////////////////////////////////////////////////////////////////////////
 /// ChartView
 
-ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent)
+ExQChart::ExQChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent)
     : QChartView(parent)
     , scrollFit_(false)
     , timeFrame_(3600)
@@ -414,7 +414,7 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
     maxP *= Defaults::MAX_P;
     axisY->setRange(minP, maxP);
 
-    connect(series, &QCandlestickSeries::hovered, this, &ExChart::onHover);
+    connect(series, &QCandlestickSeries::hovered, this, &ExQChart::onHover);
 
     timeLabel_ = new QGraphicsSimpleTextItem(chart);
     timeLabel_->setText("0000-00-00 00:00");
@@ -429,52 +429,52 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
 //    std::cerr << QLocale::system().name().toStdString() << std::endl;
 //    std::cerr << QLocale().name().toStdString() << std::endl;
 
-    QTimer::singleShot(1000, this, &ExChart::onTimer);
+    QTimer::singleShot(1000, this, &ExQChart::onTimer);
 }
 
-QAbstractTableModel *ExChart::model()
+QAbstractTableModel *ExQChart::model()
 {
     return model_;
 }
 
-QMap<QString, QDateTime> ExChart::dataRange()
+QMap<QString, QDateTime> ExQChart::dataRange()
 {
     return model_->dataRange();
 }
 
-QDateTime ExChart::oldestData()
+QDateTime ExQChart::oldestData()
 {
     QMap<QString, QDateTime> map = dataRange();
     return map["oldest"];
 }
 
-QDateTime ExChart::youngestData()
+QDateTime ExQChart::youngestData()
 {
     QMap<QString, QDateTime> map = dataRange();
     return map["youngest"];
 }
 
-qreal ExChart::minLowValue()
+qreal ExQChart::minLowValue()
 {
     return model_->minLowValue();
 }
 
-qreal ExChart::maxHighValue()
+qreal ExQChart::maxHighValue()
 {
     return model_->maxHighValue();
 }
 
-void ExChart::zoomWithPixels(QPoint pixels)
+void ExQChart::zoomWithPixels(QPoint pixels)
 {
     TRACE("Unexpected event!") << pixels;
 }
 
-void ExChart::zoomWithDegrees(QPoint steps)
+void ExQChart::zoomWithDegrees(QPoint steps)
 {
     TRACE("Not yet implemented!") << steps;
 }
 
-void ExChart::scrollHorizontal(QPoint steps)
+void ExQChart::scrollHorizontal(QPoint steps)
 {
     int step = steps.x();
     if (!step)
@@ -513,7 +513,7 @@ void ExChart::scrollHorizontal(QPoint steps)
 //    TRACE("") << axisX->min() << "<->" << axisX->max();
 }
 
-void ExChart::scrollVertical(QPoint steps)
+void ExQChart::scrollVertical(QPoint steps)
 {
     qreal diffP = steps.y();
     if (!diffP)
@@ -537,7 +537,7 @@ void ExChart::scrollVertical(QPoint steps)
 ////////////////////////////////////////////////////////////////////////////////
 /// Exvents
 
-void ExChart::resizeEvent(QResizeEvent *event)
+void ExQChart::resizeEvent(QResizeEvent *event)
 {
 //    QDateTime maxD = youngestData();
 //    QRectF pa = chart()->plotArea();
@@ -554,7 +554,7 @@ void ExChart::resizeEvent(QResizeEvent *event)
     QChartView::resizeEvent(event);
 }
 
-void ExChart::mousePressEvent(QMouseEvent *event)
+void ExQChart::mousePressEvent(QMouseEvent *event)
 {
 //    TRACE("") << event->buttons() << "pos:" << event->pos() << "local:" << event->localPos() << "window:" << event->windowPos() << "screen:" << event->screenPos();
     if (event->buttons() & Qt::LeftButton)
@@ -569,7 +569,7 @@ void ExChart::mousePressEvent(QMouseEvent *event)
     QChartView::mousePressEvent(event);
 }
 
-void ExChart::mouseMoveEvent(QMouseEvent *event)
+void ExQChart::mouseMoveEvent(QMouseEvent *event)
 {
 //    TRACE("") << event->buttons() << "pos:" << event->pos() << "local:" << event->localPos() << "window:" << event->windowPos() << "screen:" << event->screenPos();
 
@@ -602,7 +602,7 @@ void ExChart::mouseMoveEvent(QMouseEvent *event)
     QChartView::mouseMoveEvent(event);
 }
 
-void ExChart::mouseReleaseEvent(QMouseEvent *event)
+void ExQChart::mouseReleaseEvent(QMouseEvent *event)
 {
 //    TRACE("") << event->buttons() << "pos:" << event->pos() << "local:" << event->localPos() << "window:" << event->windowPos() << "screen:" << event->screenPos();
     if (!dragStart_.isNull())
@@ -614,7 +614,7 @@ void ExChart::mouseReleaseEvent(QMouseEvent *event)
     QChartView::mouseReleaseEvent(event);
 }
 
-void ExChart::mouseDoubleClickEvent(QMouseEvent *event)
+void ExQChart::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton)
     {
@@ -627,7 +627,7 @@ void ExChart::mouseDoubleClickEvent(QMouseEvent *event)
         QChartView::mouseDoubleClickEvent(event);
 }
 
-void ExChart::wheelEvent(QWheelEvent *event)
+void ExQChart::wheelEvent(QWheelEvent *event)
 {
     QPoint numPixels = event->pixelDelta();
     QPoint numDegrees = event->angleDelta();
@@ -653,7 +653,7 @@ void ExChart::wheelEvent(QWheelEvent *event)
 ////////////////////////////////////////////////////////////////////////////////
 /// Slots
 
-void ExChart::setSymbol(const QString symbol)
+void ExQChart::setSymbol(const QString symbol)
 {
     symbol_.clear();
     symbol_ = std::move(symbol);
@@ -664,12 +664,12 @@ void ExChart::setSymbol(const QString symbol)
         setWindowTitle(symbol_);
 }
 
-void ExChart::onHover(bool status, QCandlestickSet *set)
+void ExQChart::onHover(bool status, QCandlestickSet *set)
 {
     TRACE("") << status << QDateTime::fromMSecsSinceEpoch(set->timestamp(), Qt::UTC) << set->open() << set->low() << set->high() << set->close();
 }
 
-void ExChart::onTimer()
+void ExQChart::onTimer()
 {
     if (request_)
         return;
@@ -678,10 +678,10 @@ void ExChart::onTimer()
         TRACE("empty");
 
     request_ = protocol_->requestExchangeCandledata(symbol_, "1h");
-    connect(request_, &ExchangeRequest::dataReady, this, &ExChart::onCandleDataReady);
+    connect(request_, &ExchangeRequest::dataReady, this, &ExQChart::onCandleDataReady);
 }
 
-void ExChart::onCandleDataReady()
+void ExQChart::onCandleDataReady()
 {
     if (request_)
     {
@@ -692,13 +692,13 @@ void ExChart::onCandleDataReady()
         parseJSON(json_data);
     }
 
-    QTimer::singleShot(550, this, &ExChart::onTimer);
+    QTimer::singleShot(550, this, &ExQChart::onTimer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// JSON Parser
 
-void ExChart::parseJSON(QByteArray &json_data)
+void ExQChart::parseJSON(QByteArray &json_data)
 {
     QJsonParseError jsonError;
     QJsonDocument doc = QJsonDocument::fromJson(json_data, &jsonError);
@@ -734,7 +734,7 @@ void ExChart::parseJSON(QByteArray &json_data)
     scaleData();
 }
 
-crex::data::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
+crex::data::candle_data ExQChart::parseJSONCandle(const QJsonArray &json)
 {
 //    TRACE("") << json[i];
     struct crex::data::candle_data d;
@@ -746,7 +746,7 @@ crex::data::candle_data ExChart::parseJSONCandle(const QJsonArray &json)
     return d;
 }
 
-void ExChart::scaleData()
+void ExQChart::scaleData()
 {
     mapper_->setFirstSetRow(0);
     mapper_->setLastSetRow(model_->rowCount() - 1);
@@ -755,7 +755,7 @@ void ExChart::scaleData()
     scaleDataY();
 }
 
-void ExChart::scaleDataX()
+void ExQChart::scaleDataX()
 {
     QDateTimeAxis *axisX = qobject_cast<QDateTimeAxis *>(chart()->axes(Qt::Horizontal).at(0));
     QDateTime maxD = autoScale_ ? youngestData() : axisX->max();
@@ -769,7 +769,7 @@ void ExChart::scaleDataX()
     axisX->setRange(minD, maxD);
 }
 
-void ExChart::scaleDataY()
+void ExQChart::scaleDataY()
 {
     if (autoScale_)
     {
@@ -782,13 +782,13 @@ void ExChart::scaleDataY()
     }
 }
 
-void ExChart::setAutoScale(bool ascale)
+void ExQChart::setAutoScale(bool ascale)
 {
     autoScale_ = ascale;
     scaleData();
 }
 
-void ExChart::updateTimeLabel(QPointF localPos)
+void ExQChart::updateTimeLabel(QPointF localPos)
 {
     auto const widgetPos = localPos;
 //    TRACE("") << "widgetPos:" << widgetPos;
@@ -824,23 +824,23 @@ void ExChart::updateTimeLabel(QPointF localPos)
 ////////////////////////////////////////////////////////////////////////////////
 /// Helpers
 
-bool ExChart::scrollFit()
+bool ExQChart::scrollFit()
 {
     return scrollFit_;
 }
 
-void ExChart::setScrollFit(bool fit)
+void ExQChart::setScrollFit(bool fit)
 {
     scrollFit_ = fit;
     resize(size());
 }
 
-qint64 ExChart::timeFrame()
+qint64 ExQChart::timeFrame()
 {
     return timeFrame_;
 }
 
-bool ExChart::setTimeFrame(qint64 t)
+bool ExQChart::setTimeFrame(qint64 t)
 {
     bool found = false;
     for (size_t i = 0; i < (sizeof(timeFrameSeconds) / sizeof(Defaults::TimeFrameType)); i++)

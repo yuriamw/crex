@@ -96,11 +96,11 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 /// ChartView
 
-class ExChart : public QtCharts::QChartView
+class ExQChart : public QtCharts::QChartView
 {
     Q_OBJECT
 public:
-    ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
+    ExQChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
 
     bool scrollFit();
     void setScrollFit(bool fit);

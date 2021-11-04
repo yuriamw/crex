@@ -15,7 +15,7 @@
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
 #include "exorderbook.h"
-#include "exchart.h"
+#include "exqchart.h"
 #include "mdichild.h"
 
 class MW : public QMainWindow

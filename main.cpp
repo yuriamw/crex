@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
 
     Core core;
 
-    ExChartWidget cw;
-    cw.view()->setWindowTitle("Chart");
+    crex::ch::ExChartWidget cw;
+//    cw.view()->setWindowTitle("Chart");
     cw.view()->show();
 
 //    MW mw(core.exchangeProtocol(), core.exchangeInfo());

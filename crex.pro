@@ -22,15 +22,17 @@ SOURCES += \
     exchange/exchangerequest.cpp \
     exchangeinfo.cpp \
     exchangeprotocol.cpp \
-    exchart.cpp \
     exorderbook.cpp \
+    exqchart.cpp \
     main.cpp \
     mw.cpp \
     symbol.cpp \
     symbolitem.cpp \
     symbolmodel.cpp \
     widgets/excandle.cpp \
-    widgets/exchartwidget.cpp
+    widgets/exchart.cpp \
+    widgets/exchartwidget.cpp \
+    widgets/exitem.cpp
 
 HEADERS += \
     core/core.h \
@@ -39,8 +41,8 @@ HEADERS += \
     exchange/exchangerequest.h \
     exchangeinfo.h \
     exchangeprotocol.h \
-    exchart.h \
     exorderbook.h \
+    exqchart.h \
     logger.h \
     mdichild.h \
     mw.h \
@@ -48,7 +50,9 @@ HEADERS += \
     symbolitem.h \
     symbolmodel.h \
     widgets/excandle.h \
-    widgets/exchartwidget.h
+    widgets/exchart.h \
+    widgets/exchartwidget.h \
+    widgets/exitem.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
