@@ -1,7 +1,8 @@
 #ifndef EXCHARTWIDGET_H
 #define EXCHARTWIDGET_H
 
-#include <QObject>
+#include <QString>
+#include <QWidget>
 #include <QMouseEvent>
 #include <QResizeEvent>
 
@@ -16,29 +17,19 @@
 
 namespace crex::ch {
 
-class ExView : public QGraphicsView
+class ExChartView : public QGraphicsView
 {
 public:
-    ExView(QGraphicsScene *scene, QGraphicsWidget *child, QWidget *parent = nullptr);
-
-protected:
-//    void mouseMoveEvent(QMouseEvent *event) override;
-    void resizeEvent(QResizeEvent *event) override;
-
-private:
-    QGraphicsWidget *child_;
-};
-
-class ExChartWidget : public QObject
-{
-    Q_OBJECT
-public:
-    ExChartWidget(QObject *parent = nullptr);
+    ExChartView(const QString & symbol_name, QWidget *parent = nullptr);
 
     QGraphicsScene *scene();
     QGraphicsWidget *widget();
-    QGraphicsView *view();
     ExChart *chart();
+
+protected:
+    void setWindowTitle(const QString & title);
+//    void mouseMoveEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     void simulateDataLine();
@@ -46,9 +37,9 @@ private:
     void moveCursorLines(int x, int y);
 
 private:
+    QString symbol_name_;
     QGraphicsScene *scene_;
     QGraphicsWidget *widget_;
-    ExView *view_;
     ExChart *chart_;
     QGraphicsLineItem *vertical_cursor_;
     QGraphicsLineItem *horizontal_cursor_;

@@ -3,7 +3,7 @@
 #include "core/core.h"
 #include "mw.h"
 
-#include "widgets/exchartwidget.h"
+#include "widgets/exchartview.h"
 
 int main(int argc, char *argv[])
 {
@@ -11,9 +11,8 @@ int main(int argc, char *argv[])
 
     Core core;
 
-    crex::ch::ExChartWidget cw;
-//    cw.view()->setWindowTitle("Chart");
-    cw.view()->show();
+    crex::ch::ExChartView cw("ExChart");
+    cw.show();
 
 //    MW mw(core.exchangeProtocol(), core.exchangeInfo());
 //    mw.show();

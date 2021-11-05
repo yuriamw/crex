@@ -1,6 +1,8 @@
 #ifndef CHART_H
 #define CHART_H
 
+#include "widgets/exitem.h"
+
 #include <QRectF>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -9,10 +11,10 @@
 
 namespace crex::ch {
 
-class ExChart : public QGraphicsItem
+class ExChart : public ExItem
 {
 public:
-    ExChart(QGraphicsItem * parent = nullptr);
+    ExChart(int num = 0, QGraphicsItem *parent = nullptr);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;

@@ -1,4 +1,4 @@
-#include "exchartwidget.h"
+#include "exchartview.h"
 
 #include <QResizeEvent>
 
@@ -20,10 +20,90 @@ namespace crex::ch {
 
 /////////////////////////////////////////////////////////////////////////////
 ///
-ExView::ExView(QGraphicsScene *scene, QGraphicsWidget *child, QWidget *parent)
-    : QGraphicsView(scene, parent)
-    , child_(child)
-{}
+ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
+    : QGraphicsView(parent)
+    , symbol_name_(std::move(symbol_name))
+//    , chart_(new ExChart(widget_))
+{
+    setWindowTitle(symbol_name_);
+
+    scene_ = new QGraphicsScene();
+    setScene(scene_);
+
+    widget_ = new QGraphicsWidget();
+    scene_->addItem(widget_);
+
+    const auto scene_width = 600.0;
+    const auto scene_height = 400.0;
+
+//    scene_->setSceneRect(0, 0, scene_width, scene_height);
+
+    QGraphicsLinearLayout *window = new QGraphicsLinearLayout(Qt::Vertical);
+    QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(Qt::Horizontal, window);
+    layout->setSpacing(5);
+
+    ExChart *ch = new ExChart(0);
+    ch->setMinimumSize(32, 44);
+    ch->setMaximumSize(32, 44);
+    layout->addItem(ch);
+    layout->setStretchFactor(ch, 1);
+
+    crex::ch::ExItem *eim = new crex::ch::ExItem(1);
+    eim->setMinimumSize(48, 128);
+//    eim->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
+    layout->addItem(eim);
+    layout->setStretchFactor(eim, 1);
+
+    eim = new crex::ch::ExItem(2);
+//    eim->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
+    eim->setMinimumSize(24, 128);
+    layout->addItem(eim);
+    layout->setStretchFactor(eim, 3);
+
+    eim = new crex::ch::ExItem(3);
+//    eim->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
+    layout->addItem(eim);
+    layout->setStretchFactor(eim, 15);
+
+    window->addItem(layout);
+    widget_->setLayout(window);
+
+//    scene_->addItem(chart_);
+
+    resize(scene_width, scene_height);
+    setCursor(Qt::CrossCursor);
+//    QPen pen;
+//    pen.setStyle(Qt::DashLine);
+//    pen.setColor(Qt::gray);
+//    vertical_cursor_ = new QGraphicsLineItem(scene_->width(), 0, scene_->width(), scene_->height());
+//    vertical_cursor_->setPen(pen);
+//    scene_->addItem(vertical_cursor_);
+//    horizontal_cursor_ = new QGraphicsLineItem(0, 0, scene_->width(), 0);
+//    horizontal_cursor_->setPen(pen);
+//    scene_->addItem(horizontal_cursor_);
+
+//    setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
+
+    // Simulate candle data
+//    simulateDataLine();
+}
+
+QGraphicsScene *ExChartView::scene()
+{
+    return scene_;
+}
+
+ExChart *ExChartView::chart()
+{
+    return chart_;
+}
+
+// Protected
+
+void ExChartView::setWindowTitle(const QString & title)
+{
+    QGraphicsView::setWindowTitle(title);
+}
 
 // Protected Events
 
@@ -35,91 +115,14 @@ ExView::ExView(QGraphicsScene *scene, QGraphicsWidget *child, QWidget *parent)
 //    }
 //}
 
-void ExView::resizeEvent(QResizeEvent *event)
+void ExChartView::resizeEvent(QResizeEvent *event)
 {
-    child_->resize(event->size());
+    widget_->resize(event->size());
 }
 
-/////////////////////////////////////////////////////////////////////////////
-///
-ExChartWidget::ExChartWidget(QObject *parent)
-    : QObject(parent)
-    , scene_(new QGraphicsScene())
-    , widget_(new QGraphicsWidget())
-    , view_(new ExView(scene_, widget_))
-//    , chart_(new ExChart(widget_))
-{
-    QGraphicsView *v = view_;
-    widget_->setWindowTitle("Chart Widget");
-    widget_->palette().setBrush(QPalette::Window, QBrush(Qt::cyan));
+// Functions
 
-    const auto scene_width = 600.0;
-    const auto scene_height = 400.0;
-
-//    scene_->setSceneRect(0, 0, scene_width, scene_height);
-
-    QGraphicsLinearLayout *window = new QGraphicsLinearLayout(Qt::Vertical);
-    QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(Qt::Horizontal, window);
-    layout->setSpacing(5);
-
-    crex::w::ExItem *eim = new crex::w::ExItem(1);
-    eim->setMinimumSize(48, 128);
-//    eim->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
-    layout->addItem(eim);
-    layout->setStretchFactor(eim, 1);
-
-    eim = new crex::w::ExItem(2);
-//    eim->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
-    eim->setMinimumSize(24, 128);
-    layout->addItem(eim);
-    layout->setStretchFactor(eim, 3);
-
-    eim = new crex::w::ExItem(3);
-//    eim->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
-    layout->addItem(eim);
-    layout->setStretchFactor(eim, 15);
-
-    window->addItem(layout);
-    widget_->setLayout(window);
-
-    scene_->addItem(widget_);
-
-//    scene_->addItem(chart_);
-
-    view_->resize(scene_width, scene_height);
-    view_->setCursor(Qt::CrossCursor);
-//    QPen pen;
-//    pen.setStyle(Qt::DashLine);
-//    pen.setColor(Qt::gray);
-//    vertical_cursor_ = new QGraphicsLineItem(scene_->width(), 0, scene_->width(), scene_->height());
-//    vertical_cursor_->setPen(pen);
-//    scene_->addItem(vertical_cursor_);
-//    horizontal_cursor_ = new QGraphicsLineItem(0, 0, scene_->width(), 0);
-//    horizontal_cursor_->setPen(pen);
-//    scene_->addItem(horizontal_cursor_);
-
-//    view_->setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
-
-    // Simulate candle data
-//    simulateDataLine();
-}
-
-QGraphicsScene *ExChartWidget::scene()
-{
-    return scene_;
-}
-
-QGraphicsView *ExChartWidget::view()
-{
-    return view_;
-}
-
-ExChart *ExChartWidget::chart()
-{
-    return chart_;
-}
-
-void ExChartWidget::simulateDataLine()
+void ExChartView::simulateDataLine()
 {
     candles_ = crex::data::DataSim::getTriangle(32, 4);
 
@@ -149,7 +152,7 @@ void ExChartWidget::simulateDataLine()
 
 // Cursor
 
-void ExChartWidget::moveCursorLines(int x, int y)
+void ExChartView::moveCursorLines(int x, int y)
 {
     vertical_cursor_->setLine(x, 0, x, scene_->height());
     horizontal_cursor_->setLine(0, y, scene_->width(), y);

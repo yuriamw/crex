@@ -4,7 +4,7 @@
 #include <QGraphicsLayoutItem>
 #include <QGraphicsItem>
 
-namespace crex::w {
+namespace crex::ch {
 
 class ExItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
@@ -23,6 +23,6 @@ private:
     int num_;
 };
 
-} // namespace crex::w
+} // namespace crex::ch
 
 #endif // EXITEM_H

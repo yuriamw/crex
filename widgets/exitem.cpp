@@ -9,7 +9,7 @@
 
 #include "logger.h"
 
-namespace crex::w {
+namespace crex::ch {
 
 ExItem::ExItem(int num, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
@@ -74,4 +74,4 @@ void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     painter->drawEllipse(p, geometry().size().width() / 2, geometry().size().height() / 2);
 }
 
-} // namespace crex::w
+} // namespace crex::ch

@@ -31,7 +31,7 @@ SOURCES += \
     symbolmodel.cpp \
     widgets/excandle.cpp \
     widgets/exchart.cpp \
-    widgets/exchartwidget.cpp \
+    widgets/exchartview.cpp \
     widgets/exitem.cpp
 
 HEADERS += \
@@ -51,7 +51,7 @@ HEADERS += \
     symbolmodel.h \
     widgets/excandle.h \
     widgets/exchart.h \
-    widgets/exchartwidget.h \
+    widgets/exchartview.h \
     widgets/exitem.h
 
 # Default rules for deployment.
