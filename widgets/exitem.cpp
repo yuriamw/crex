@@ -32,8 +32,7 @@ QSizeF ExItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
     switch (which) {
         case Qt::MinimumSize:
         case Qt::PreferredSize:
-            // Do not allow a size smaller than the pixmap with two frames around it.
-            return QSizeF(10, 30);
+            return QSizeF(100, 140);
         case Qt::MaximumSize:
             return QSizeF(100000,100000);
         default:
@@ -72,6 +71,11 @@ void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     painter->setBrush(QBrush(color));
     QPointF p(geometry().size().width() / 2, geometry().size().height() / 2);
     painter->drawEllipse(p, geometry().size().width() / 2, geometry().size().height() / 2);
+
+    painter->setPen(Qt::cyan);
+    painter->setBrush(QBrush(Qt::cyan));
+    painter->drawRect(QRectF( QPointF(0, 0), minimumSize() ));
+
 }
 
 } // namespace crex::ch
