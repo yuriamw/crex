@@ -14,6 +14,7 @@
 #include <QAction>
 
 #include "logger.h"
+#include "data/data.h"
 #include "exorderbook.h"
 #include "mdichild.h"
 
@@ -316,23 +317,6 @@ void ExOrderBook::onDepthOfMarketDataReady()
 ////////////////////////////////////////////////////////////////////////////////
 /// JSON Parser
 
-bool ExOrderBook::dumpToFile(const QString & filename, const QJsonDocument & doc)
-{
-    QFile file(filename);
-    if (!file.open(QIODevice::WriteOnly))
-    {
-        TRACE("") << "IO error:" << file.errorString();
-        return false;
-    }
-    if (file.write(doc.toJson()) < 0)
-    {
-        TRACE("") << "IO error:" << file.errorString();
-        return false;
-    }
-    file.close();
-    return true;
-}
-
 void ExOrderBook::parseJSON(QByteArray &json_data)
 {
     QJsonParseError jsonError;
@@ -345,7 +329,7 @@ void ExOrderBook::parseJSON(QByteArray &json_data)
     QJsonObject json = doc.object();
 
 //    static int q = 0;
-//    dumpToFile(QString("../orderbook-dump-%1.json").arg(q++), doc);
+//    crex::data::dumpToFile(QString("../orderbook-dump-%1.json").arg(q++), doc);
 
     /*
 {

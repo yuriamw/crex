@@ -86,7 +86,6 @@ private slots:
     void onDepthOfMarketDataReady();
 
 private:
-    bool dumpToFile(const QString & filename, const QJsonDocument & doc);
     void parseJSON(QByteArray &json_data);
     void parseJSON(const QJsonArray &json, QList<orderbook::order> & orders);
     orderbook::order parseJSONOrder(const QJsonArray &json);

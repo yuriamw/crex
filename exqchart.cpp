@@ -708,8 +708,8 @@ void ExQChart::parseJSON(QByteArray &json_data)
         return;
     }
 
-//    static int q = 0;
-//    dumpToFile(QString("../candle-dump-%1.json").arg(q++), doc);
+//     static int q = 0;
+//     crex::data::dumpToFile(QString("../candle-dump-%1.json").arg(q++), doc);
 
     if (!doc.isArray())
     {

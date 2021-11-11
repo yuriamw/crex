@@ -46,7 +46,6 @@ private slots:
 
 private:
     void quoteLongInt(QByteArray & data, const QString & key);
-    bool dumpToFile(const QString & filename, const QJsonDocument & doc);
     void setExchangeTime(const qlonglong timestamp);
     void setTimeZone(const QString &timezone);
 

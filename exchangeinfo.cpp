@@ -11,6 +11,7 @@
 
 #include "logger.h"
 
+#include <data/data.h>
 #include "exchangeinfo.h"
 
 #include "exchange/exchangerequest.h"
@@ -139,27 +140,10 @@ bool ExchangeInfo::parseJSON(QByteArray & data)
     }
 
 //    static int q = 0;
-//    dumpToFile(QString("../exchangeinfo-dump-%1.json").arg(q++), doc);
+//    crex::data::dumpToFile(QString("../exchangeinfo-dump-%1.json").arg(q++), doc);
 
     this->clear();
     return parseJSON(doc.object());
-}
-
-bool ExchangeInfo::dumpToFile(const QString & filename, const QJsonDocument & doc)
-{
-    QFile file(filename);
-    if (!file.open(QIODevice::WriteOnly))
-    {
-        TRACE("") << "IO error:" << file.errorString();
-        return false;
-    }
-    if (file.write(doc.toJson()) < 0)
-    {
-        TRACE("") << "IO error:" << file.errorString();
-        return false;
-    }
-    file.close();
-    return true;
 }
 
 bool ExchangeInfo::parseJSON(const QJsonObject &json)

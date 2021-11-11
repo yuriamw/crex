@@ -2,6 +2,8 @@
 #define DATA_H
 
 #include <QtGlobal>
+#include <QString>
+#include <QJsonDocument>
 
 namespace crex::data {
 
@@ -12,6 +14,8 @@ struct candle_data {
     qreal h;
     qreal t;
 };
+
+bool dumpToFile(const QString & filename, const QJsonDocument & doc);
 
 } // namespace crex::data
 
