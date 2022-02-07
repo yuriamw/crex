@@ -33,18 +33,18 @@ QVector<crex::data::candle_data> DataSim::getLine(int len, bool randomize, QDate
             candle.c = candle.o;
             candle.o = candle.h;
         }
-        candle.h = candle.c  + 7.0;
+        candle.h = candle.c  + 12.0;
         candle.l = candle.o - 5.0;
 //        candle.c = -1 * (i & 1) + candle.o;
 //        candle.h = candle.o > candle.c ? candle.o - 3 : candle.c + 5;
 //        candle.l = candle.o > candle.c ? candle.c - 3 : candle.o + 5;
 
-        TRACE("") << candle.o << candle.c << candle.h << candle.l;
-
         qint64 timeFrame_ = 3600;
         QDateTime now = start.isValid() ? start : QDateTime(QDateTime::currentDateTimeUtc());
         QDateTime dt = now.addSecs(-i * timeFrame_);
         candle.t = dt.toMSecsSinceEpoch();
+
+        TRACE("") << candle.o << candle.c << candle.h << candle.l << qint64(candle.t);
 
         vector[i] = candle;
     }
