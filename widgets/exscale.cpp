@@ -3,7 +3,7 @@
 namespace crex::ch {
 
 ExScale::ExScale(const Qt::Orientation orientation, QGraphicsItem * parent)
-    : ExItem(0, parent)
+    : ExItem(parent)
     , orientation_(orientation)
 {
     if (orientation_ == Qt::Horizontal)
@@ -45,10 +45,11 @@ QRectF ExScale::boundingRect() const
         painter->rotate(90);
         painter->translate(0, - geometry().width());
         painter->drawText(QRectF(20, 1, geometry().height() - 21, geometry().width() - 1), text);
+        painter->translate(0, geometry().width());
         painter->rotate(-90);
     }
     else
         painter->drawText(QRectF(20, 1, geometry().width() - 21, geometry().height() - 1), text);
- }
+}
 
 } // namespace crex::ch

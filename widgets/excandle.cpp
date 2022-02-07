@@ -9,49 +9,117 @@
 namespace crex::candle {
 
 ExCandle::ExCandle(QGraphicsItem *parent)
-    : polygon_(new QGraphicsPolygonItem(parent))
+    : polygon_item_(new QGraphicsPolygonItem(parent))
+    , open_(0)
+    , close_(0)
+    , high_(0)
+    , low_(0)
 {
-
+    prepareCandlePolygon();
 }
+
+ExCandle::ExCandle(const qreal open, const qreal close, const qreal high, const qreal low, QGraphicsItem *parent)
+    : polygon_item_(new QGraphicsPolygonItem(parent))
+    , open_(open)
+    , close_(close)
+    , high_(high)
+    , low_(low)
+{
+    prepareCandlePolygon();
+}
+
+qreal ExCandle::open() const
+{
+    return open_;
+}
+
+qreal ExCandle::close() const
+{
+    return close_;
+}
+
+qreal ExCandle::high() const
+{
+    return high_;
+}
+
+qreal ExCandle::low() const
+{
+    return low_;
+}
+
 
 QGraphicsItem *ExCandle::item()
 {
-    return polygon_;
+    return polygon_item_;
 }
 
-void ExCandle::setCandle(qreal open, qreal close, qreal high, qreal low)
+void ExCandle::prepareCandlePolygon()
+{
+    QBrush brush;
+    QPen pen;
+    QColor color(isDown() ? Qt::red : Qt::darkGreen);
+
+    brush.setStyle( Qt::SolidPattern);
+    brush.setColor(color);
+    pen.setColor(color);
+
+    qreal top = isDown() ? open_ : close_;
+    qreal bottom = isDown() ? close_ : open_;
+
+    QPolygonF p;
+    p << QPointF(candle_side_width + 1, high_ - high_);
+    p << QPointF(candle_side_width + 1, high_ - top);
+    p << QPointF(candle_side_width * 2 + 1, high_ - top);
+    p << QPointF(candle_side_width * 2 + 1, high_ - bottom);
+    p << QPointF(candle_side_width + 1, high_ - bottom);
+    p << QPointF(candle_side_width + 1, high_ - low_);
+    p << QPointF(candle_side_width + 1, high_ - bottom);
+    p << QPointF(0, high_ - bottom);
+    p << QPointF(0, high_ - top);
+    p << QPointF(candle_side_width + 1, high_ - top);
+
+    polygon_ = p;
+//    polygon_.clear();
+//    polygon_ << QPointF(candle_side_width + 1, high_);
+//    polygon_ << QPointF(candle_side_width + 1, top);
+//    polygon_ << QPointF(candle_side_width * 2 + 1, top);
+//    polygon_ << QPointF(candle_side_width * 2 + 1, bottom);
+//    polygon_ << QPointF(candle_side_width + 1, bottom);
+//    polygon_ << QPointF(candle_side_width + 1, low_);
+//    polygon_ << QPointF(candle_side_width + 1, bottom);
+//    polygon_ << QPointF(0, bottom);
+//    polygon_ << QPointF(0, top);
+//    polygon_ << QPointF(candle_side_width + 1, top);
+
+    polygon_item_->setBrush(brush);
+    polygon_item_->setPen(pen);
+    polygon_item_->setPolygon(p);
+}
+
+void ExCandle::setCandle(const qreal open, const qreal close, const qreal high, const qreal low)
 {
     open_ = open;
     close_ = close;
     high_ = high;
     low_ = low;
 
-    QBrush brush;
-    QPen pen;
-    QColor color(open > close ? Qt::red : Qt::darkGreen);
+    prepareCandlePolygon();
+}
 
-    brush.setStyle( Qt::SolidPattern);
-    brush.setColor(color);
-    pen.setColor(color);
+const QPolygonF & ExCandle::shape() const
+{
+    return polygon_;
+}
 
-    QPolygonF p;
-    qreal top = open > close ? open : close;
-    qreal bottom = open > close ? close : open;
+bool ExCandle::isUp() const
+{
+    return open_ <= close_;
+}
 
-    p << QPointF(candle_side_width + 1, high - high);
-    p << QPointF(candle_side_width + 1, high - top);
-    p << QPointF(candle_side_width * 2 + 1, high - top);
-    p << QPointF(candle_side_width * 2 + 1, high - bottom);
-    p << QPointF(candle_side_width + 1, high - bottom);
-    p << QPointF(candle_side_width + 1, high - low);
-    p << QPointF(candle_side_width + 1, high - bottom);
-    p << QPointF(0, high - bottom);
-    p << QPointF(0, high - top);
-    p << QPointF(candle_side_width + 1, high - top);
-
-    polygon_->setBrush(brush);
-    polygon_->setPen(pen);
-    polygon_->setPolygon(p);
+bool ExCandle::isDown() const
+{
+    return open_ > close_;
 }
 
 qreal ExCandle::width()
@@ -59,9 +127,10 @@ qreal ExCandle::width()
     return candle_side_width * 2 + 1;
 }
 
-qreal ExCandle::height()
+qreal ExCandle::height() const
 {
     return high_ - low_;
 }
+
 } // namespace crex::candle
 

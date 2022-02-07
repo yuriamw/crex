@@ -12,15 +12,28 @@ class ExCandle
 {
 public:
     explicit ExCandle(QGraphicsItem *parent = nullptr);
-    void setCandle(qreal open, qreal close, qreal high, qreal low);
+    explicit ExCandle(const qreal open, const qreal close, const qreal high, const qreal low, QGraphicsItem *parent = nullptr);
+    void setCandle(const qreal open, const qreal close, const qreal high, const qreal low);
+
+    qreal open() const;
+    qreal close() const;
+    qreal high() const;
+    qreal low() const;
 
     QGraphicsItem *item();
+    const QPolygonF & shape() const;
+    bool isUp() const;
+    bool isDown() const;
 
     static qreal width();
-    qreal height();
+    qreal height() const;
 
 private:
-    QGraphicsPolygonItem *polygon_;
+    void prepareCandlePolygon();
+
+private:
+    QGraphicsPolygonItem *polygon_item_;
+    QPolygonF polygon_;
     qreal open_;
     qreal close_;
     qreal high_;

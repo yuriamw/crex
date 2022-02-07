@@ -67,7 +67,7 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     crex::ch::ExScale *hScale = new crex::ch::ExScale(Qt::Horizontal);
     glayout->addItem(hScale, DateScale_GridRow, DateScale_GridColumn, Qt::Alignment());
 
-    crex::ch::ExItem *tBox = new crex::ch::ExItem(1);
+    crex::ch::ExItem *tBox = new crex::ch::ExItem();
     tBox->setMinimumSize(24, 24);
     tBox->setMaximumSize(24, 24);
     glayout->addItem(tBox, Toolbox_GridRow, Toolbox_GridColumn, Qt::Alignment());
@@ -87,7 +87,7 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
 
 //     Simulate candle data
-//    simulateDataLine();
+    simulateDataLine();
 }
 
 QGraphicsScene *ExChartView::scene()
@@ -139,27 +139,9 @@ void ExChartView::simulateDataLine()
 {
     candles_ = crex::data::DataSim::getTriangle(32, 4);
 
-    const auto scene_width = scene_->width();
-    const auto scene_height = scene_->height();
-    const auto candle_width = crex::candle::ExCandle::width() + 1;
-
-    int min = 0;
-    int max = 0;
-    for (int i = 1; i < candles_.size(); i++)
-    {
-        if (candles_[i].h > candles_[max].h)
-            max = i;
-
-        if (candles_[i].l < candles_[min].l)
-            min = i;
-    }
-
     for (int i = 0; i < candles_.size(); i++)
     {
-        crex::candle::ExCandle *candle = new crex::candle::ExCandle();
-        candle->setCandle(candles_[i].o, candles_[i].c, candles_[i].h, candles_[i].l);
-        candle->item()->setPos(scene_width - candle_width * (i + 1), scene_height - candles_[i].h);
-        scene_->addItem(candle->item());
+        chart_->appendCandle(candles_[i].o, candles_[i].c, candles_[i].h, candles_[i].l);
     }
 }
 

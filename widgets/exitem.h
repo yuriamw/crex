@@ -9,7 +9,7 @@ namespace crex::ch {
 class ExItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
 public:
-    explicit ExItem(int num = 0, QGraphicsItem *parent = nullptr);
+    explicit ExItem(QGraphicsItem *parent = nullptr);
 
     // Inherited from QGraphicsLayoutItem
     void setGeometry(const QRectF &geom) override;
@@ -18,9 +18,6 @@ public:
     // Inherited from QGraphicsItem
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
-
-private:
-    int num_;
 };
 
 } // namespace crex::ch

@@ -11,10 +11,9 @@
 
 namespace crex::ch {
 
-ExItem::ExItem(int num, QGraphicsItem *parent)
+ExItem::ExItem(QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsItem(parent)
-    , num_(num)
 {
     setGraphicsItem(this);
 }
@@ -52,30 +51,17 @@ void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
-    QColor color;
-    switch (num_ & 0x3) {
-    case 1:
-        color = Qt::blue;
-        break;
-    case 2:
-        color = Qt::green;
-        break;
-    case 3:
-        color = Qt::red;
-        break;
-    default:
-        color = Qt::black;
-    }
-
-    painter->setPen(color);
-    painter->setBrush(QBrush(color));
-    QPointF p(geometry().size().width() / 2, geometry().size().height() / 2);
-    painter->drawEllipse(p, geometry().size().width() / 2, geometry().size().height() / 2);
+    painter->setPen(Qt::magenta);
+    painter->setBrush(QBrush(Qt::magenta));
+    QPointF p(geometry().size().width() / 2 + 1, geometry().size().height() / 2 + 1);
+    painter->drawEllipse(p, geometry().size().width() / 2 - 2, geometry().size().height() / 2 - 2);
 
     painter->setPen(Qt::cyan);
     painter->setBrush(QBrush(Qt::cyan));
-    painter->drawRect(QRectF( QPointF(0, 0), minimumSize() ));
-
+    QPointF tl(QPointF(geometry().size().width() / 4, geometry().size().height() / 4));
+    QPointF br(tl);
+    br *= 3;
+    painter->drawRect(QRectF(tl, br));
 }
 
 } // namespace crex::ch
