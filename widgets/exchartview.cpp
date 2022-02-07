@@ -16,6 +16,7 @@
 #include "widgets/excandle.h"
 #include "widgets/exitem.h"
 #include "widgets/exchart.h"
+#include "widgets/exscale.h"
 
 namespace crex::ch {
 
@@ -33,9 +34,6 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     setFrameShape(QFrame::NoFrame);
     setBackgroundRole(QPalette::Window);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-//    if (!chart)
-//        chart_ = new ExChart();
-//    scene_->addItem(chart_);
 
     scene_ = new QGraphicsScene();
     setScene(scene_);
@@ -44,104 +42,51 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     widget_->setWindowTitle("Widget");
     scene_->addItem(widget_);
 
+    chart_ = new ExChart();
+    scene_->addItem(chart_);
+
     const auto scene_width = 600.0;
     const auto scene_height = 400.0;
 
     resize(scene_width, scene_height);
     scene_->setSceneRect(0, 0, scene_width, scene_height);
 
-    crex::ch::ExItem *eim;
+    setCursor(Qt::CrossCursor);
 
-//    QGraphicsLinearLayout *vlayout = new QGraphicsLinearLayout(Qt::Vertical);
-//    QGraphicsLinearLayout *hlayout = new QGraphicsLinearLayout(Qt::Horizontal, vlayout);
-//    hlayout->setSpacing(5);
+    QGraphicsGridLayout *glayout = new QGraphicsGridLayout();
+    glayout->setHorizontalSpacing(0);
+    glayout->setVerticalSpacing(0);
+    glayout->setContentsMargins(0, 0, 0, 0);
 
-//    ExChart *ch = new ExChart(0);
-//    ch->setMinimumSize(32, 44);
-//    ch->setMaximumSize(32, 44);
-//    hlayout->addItem(ch);
-//    hlayout->setStretchFactor(ch, 1);
+    chart_->setMinimumSize(320, 240);
+    glayout->addItem(chart_, Chart_GridRow, Chart_GridColumn, Qt::Alignment());
 
-//    eim = new crex::ch::ExItem(1);
-//    eim->setMinimumSize(48, 128);
-////    eim->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
-//    hlayout->addItem(eim);
-//    hlayout->setStretchFactor(eim, 1);
+    crex::ch::ExScale *vScale = new crex::ch::ExScale(Qt::Vertical);
+    glayout->addItem(vScale, PriceScale_GridRow, PriceScale_GridColumn, Qt::Alignment());
 
-//    eim = new crex::ch::ExItem(2);
-////    eim->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
-//    eim->setMinimumSize(24, 128);
-//    hlayout->addItem(eim);
-//    hlayout->setStretchFactor(eim, 3);
+    crex::ch::ExScale *hScale = new crex::ch::ExScale(Qt::Horizontal);
+    glayout->addItem(hScale, DateScale_GridRow, DateScale_GridColumn, Qt::Alignment());
 
-//    eim = new crex::ch::ExItem(3);
-////    eim->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
-//    hlayout->addItem(eim);
-//    hlayout->setStretchFactor(eim, 15);
+    crex::ch::ExItem *tBox = new crex::ch::ExItem(1);
+    tBox->setMinimumSize(24, 24);
+    tBox->setMaximumSize(24, 24);
+    glayout->addItem(tBox, Toolbox_GridRow, Toolbox_GridColumn, Qt::Alignment());
 
-//    vlayout->addItem(hlayout);
-
-    const auto bigW = 120;
-    const auto bigH = 100;
-    QGraphicsGridLayout *glayout = new QGraphicsGridLayout(/*vlayout*/);
-
-    eim = new crex::ch::ExItem(1);
-    eim->setMinimumSize(32, 16);
-    glayout->addItem(eim, 0, 0, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(1);
-    eim->setMinimumSize(bigW, 16);
-    glayout->addItem(eim, 0, 1, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(1);
-    eim->setMinimumSize(32, 16);
-    glayout->addItem(eim, 0, 2, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(2);
-    eim->setMinimumSize(32, bigH);
-    glayout->addItem(eim, 1, 0, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(2);
-    eim->setMinimumSize(bigW, bigH);
-    glayout->addItem(eim, 1, 1, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(2);
-    eim->setMinimumSize(32, bigH);
-    glayout->addItem(eim, 1, 2, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(3);
-    eim->setMinimumSize(32, 16);
-    glayout->addItem(eim, 2, 0, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(3);
-    eim->setMinimumSize(bigW, 16);
-    glayout->addItem(eim, 2, 1, Qt::Alignment());
-
-    eim = new crex::ch::ExItem(3);
-    eim->setMinimumSize(32, 16);
-    glayout->addItem(eim, 2, 2, Qt::Alignment());
-
-//    vlayout->addItem(glayout);
-
-//    widget_->setLayout(vlayout);
     widget_->setLayout(glayout);
 
-//    scene_->addItem(chart_);
+    QPen pen;
+    pen.setStyle(Qt::DashLine);
+    pen.setColor(Qt::gray);
+    vertical_cursor_ = new QGraphicsLineItem(scene_->width(), 0, scene_->width(), scene_->height());
+    vertical_cursor_->setPen(pen);
+    scene_->addItem(vertical_cursor_);
+    horizontal_cursor_ = new QGraphicsLineItem(0, 0, scene_->width(), 0);
+    horizontal_cursor_->setPen(pen);
+    scene_->addItem(horizontal_cursor_);
 
-    setCursor(Qt::CrossCursor);
-//    QPen pen;
-//    pen.setStyle(Qt::DashLine);
-//    pen.setColor(Qt::gray);
-//    vertical_cursor_ = new QGraphicsLineItem(scene_->width(), 0, scene_->width(), scene_->height());
-//    vertical_cursor_->setPen(pen);
-//    scene_->addItem(vertical_cursor_);
-//    horizontal_cursor_ = new QGraphicsLineItem(0, 0, scene_->width(), 0);
-//    horizontal_cursor_->setPen(pen);
-//    scene_->addItem(horizontal_cursor_);
+    setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
 
-//    setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
-
-    // Simulate candle data
+//     Simulate candle data
 //    simulateDataLine();
 }
 
@@ -164,13 +109,13 @@ void ExChartView::setWindowTitle(const QString & title)
 
 // Protected Events
 
-//void ExView::mouseMoveEvent(QMouseEvent *event)
-//{
-//    if (!event->buttons())
-//    {
-//        moveCursorLines(event->x(), event->y());
-//    }
-//}
+void ExChartView::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!event->buttons())
+    {
+        moveCursorLines(event->x(), event->y());
+    }
+}
 
 void ExChartView::resizeEvent(QResizeEvent *event)
 {
@@ -222,8 +167,11 @@ void ExChartView::simulateDataLine()
 
 void ExChartView::moveCursorLines(int x, int y)
 {
-    vertical_cursor_->setLine(x, 0, x, scene_->height());
-    horizontal_cursor_->setLine(0, y, scene_->width(), y);
+    if (chart_->contains(QPointF(x, y)))
+    {
+        vertical_cursor_->setLine(x, 0, x, scene_->height());
+        horizontal_cursor_->setLine(0, y, scene_->width(), y);
+    }
 }
 
 } // namespace crex::ch

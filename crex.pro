@@ -32,7 +32,8 @@ SOURCES += \
     widgets/excandle.cpp \
     widgets/exchart.cpp \
     widgets/exchartview.cpp \
-    widgets/exitem.cpp
+    widgets/exitem.cpp \
+    widgets/exscale.cpp
 
 HEADERS += \
     core/core.h \
@@ -52,7 +53,8 @@ HEADERS += \
     widgets/excandle.h \
     widgets/exchart.h \
     widgets/exchartview.h \
-    widgets/exitem.h
+    widgets/exitem.h \
+    widgets/exscale.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

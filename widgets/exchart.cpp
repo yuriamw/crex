@@ -5,6 +5,7 @@ namespace crex::ch {
 ExChart::ExChart(int num, QGraphicsItem * parent)
     : ExItem(num, parent)
 {
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }
 
 QRectF ExChart::boundingRect() const
@@ -17,7 +18,7 @@ QRectF ExChart::boundingRect() const
      (void)option;
      (void)widget;
 
-     painter->drawRoundedRect(1, 1, 20, 20, 5, 5);
+     painter->drawRect(0, 0, geometry().width(), geometry().height());
  }
 
 } // namespace crex::ch

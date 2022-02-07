@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     Core core;
 
-    crex::ch::ExChartView cw("ExChart");
+    crex::ch::ExChartView cw("BTCUSDT");
     cw.show();
 
 //    MW mw(core.exchangeProtocol(), core.exchangeInfo());

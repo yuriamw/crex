@@ -17,6 +17,18 @@
 
 namespace crex::ch {
 
+const auto Chart_GridColumn = 1;
+const auto Chart_GridRow = 1;
+
+const auto DateScale_GridColumn = 1;
+const auto DateScale_GridRow = 2;
+
+const auto PriceScale_GridColumn = 2;
+const auto PriceScale_GridRow = 1;
+
+const auto Toolbox_GridColumn = 2;
+const auto Toolbox_GridRow = 2;
+
 class ExChartView : public QGraphicsView
 {
 public:
@@ -28,7 +40,7 @@ public:
 
 protected:
     void setWindowTitle(const QString & title);
-//    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
