@@ -34,6 +34,7 @@ protected:
 private:
     void simulateDataLine();
 
+    void setupCursorLines();
     void moveCursorLines(int x, int y);
 
 private:

@@ -66,7 +66,6 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     glayout->setVerticalSpacing(0);
     glayout->setContentsMargins(0, 0, 0, 0);
 
-//    chart_->setMinimumSize(320, 240);
     glayout->addItem(chart_, Chart_GridRow, Chart_GridColumn, Qt::Alignment());
 
     crex::ch::ExAxis *vScale = new crex::ch::ExAxis(Qt::Vertical);
@@ -82,15 +81,7 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
 
     widget_->setLayout(glayout);
 
-    QPen pen;
-    pen.setStyle(Qt::DashLine);
-    pen.setColor(Qt::gray);
-    vertical_cursor_ = new QGraphicsLineItem(scene_->width(), 0, scene_->width(), scene_->height());
-    vertical_cursor_->setPen(pen);
-    scene_->addItem(vertical_cursor_);
-    horizontal_cursor_ = new QGraphicsLineItem(0, 0, scene_->width(), 0);
-    horizontal_cursor_->setPen(pen);
-    scene_->addItem(horizontal_cursor_);
+    setupCursorLines();
 
     setBackgroundBrush(QBrush(QColor(Qt::magenta), Qt::SolidPattern));
 
@@ -156,12 +147,25 @@ void ExChartView::simulateDataLine()
 
 // Cursor
 
+void ExChartView::setupCursorLines()
+{
+    QPen pen;
+    pen.setStyle(Qt::DashLine);
+    pen.setColor(Qt::gray);
+    vertical_cursor_ = new QGraphicsLineItem(chart_->geometry().width(), 0, chart_->geometry().width(), chart_->geometry().height());
+    vertical_cursor_->setPen(pen);
+    scene_->addItem(vertical_cursor_);
+    horizontal_cursor_ = new QGraphicsLineItem(0, 0, chart_->geometry().width(), 0);
+    horizontal_cursor_->setPen(pen);
+    scene_->addItem(horizontal_cursor_);
+}
+
 void ExChartView::moveCursorLines(int x, int y)
 {
     if (chart_->contains(QPointF(x, y)))
     {
-        vertical_cursor_->setLine(x, 0, x, scene_->height());
-        horizontal_cursor_->setLine(0, y, scene_->width(), y);
+        vertical_cursor_->setLine(x, 0, x, chart_->geometry().height());
+        horizontal_cursor_->setLine(0, y, chart_->geometry().width(), y);
     }
 }
 
