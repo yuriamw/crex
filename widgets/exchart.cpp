@@ -8,6 +8,7 @@ ExChart::ExChart(QGraphicsItem * parent)
     : ExItem(parent)
 {
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    setMinimumSize(48, 32);
 }
 
 int ExChart::appendCandle(qreal open, qreal close, qreal high, qreal low)

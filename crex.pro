@@ -29,11 +29,11 @@ SOURCES += \
     symbol.cpp \
     symbolitem.cpp \
     symbolmodel.cpp \
+    widgets/exaxis.cpp \
     widgets/excandle.cpp \
     widgets/exchart.cpp \
     widgets/exchartview.cpp \
-    widgets/exitem.cpp \
-    widgets/exscale.cpp
+    widgets/exitem.cpp
 
 HEADERS += \
     core/core.h \
@@ -50,11 +50,11 @@ HEADERS += \
     symbol.h \
     symbolitem.h \
     symbolmodel.h \
+    widgets/exaxis.h \
     widgets/excandle.h \
     widgets/exchart.h \
     widgets/exchartview.h \
-    widgets/exitem.h \
-    widgets/exscale.h
+    widgets/exitem.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

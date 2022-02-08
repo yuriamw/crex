@@ -1,8 +1,10 @@
-#include "widgets/exscale.h"
+#include "widgets/exaxis.h"
+
+#include <QVariant>
 
 namespace crex::ch {
 
-ExScale::ExScale(const Qt::Orientation orientation, QGraphicsItem * parent)
+ExAxis::ExAxis(const Qt::Orientation orientation, QGraphicsItem * parent)
     : ExItem(parent)
     , orientation_(orientation)
 {
@@ -18,12 +20,38 @@ ExScale::ExScale(const Qt::Orientation orientation, QGraphicsItem * parent)
     }
 }
 
-QRectF ExScale::boundingRect() const
+QRectF ExAxis::boundingRect() const
  {
     return QRectF(QPointF(0, 0), geometry().size());
  }
 
- void ExScale::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+const QVariant ExAxis::min() const
+{
+    return min_;
+}
+
+const QVariant ExAxis::max() const
+{
+    return max_;
+}
+
+void ExAxis::setMax(const QVariant &  max)
+{
+    max_ = max;
+}
+
+void ExAxis::setMin(const QVariant &  min)
+{
+    min_ = min;
+}
+
+void ExAxis::setRange(const QVariant & min, const QVariant & max)
+{
+    min_ = min;
+    max_ = max;
+}
+
+ void ExAxis::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
  {
     (void)option;
     (void)widget;

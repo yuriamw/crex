@@ -16,16 +16,31 @@
 #include "widgets/excandle.h"
 #include "widgets/exitem.h"
 #include "widgets/exchart.h"
-#include "widgets/exscale.h"
+#include "widgets/exaxis.h"
 
 namespace crex::ch {
 
+namespace {
+    const auto Chart_GridColumn = 1;
+    const auto Chart_GridRow = 1;
+
+    const auto DateAxis_GridColumn = 1;
+    const auto DateAxis_GridRow = 2;
+
+    const auto PriceAxis_GridColumn = 2;
+    const auto PriceAxis_GridRow = 1;
+
+    const auto Toolbox_GridColumn = 2;
+    const auto Toolbox_GridRow = 2;
+}
 /////////////////////////////////////////////////////////////////////////////
 ///
 ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     : QGraphicsView(parent)
     , symbol_name_(std::move(symbol_name))
-//    , chart_(new ExChart(widget_))
+    , scene_ (new QGraphicsScene())
+    , widget_ (new QGraphicsWidget(nullptr, Qt::Window))
+    , chart_(new ExChart())
 {
     setWindowTitle(symbol_name_);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -35,21 +50,14 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     setBackgroundRole(QPalette::Window);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    scene_ = new QGraphicsScene();
     setScene(scene_);
 
-    widget_ = new QGraphicsWidget(nullptr, Qt::Window);
     widget_->setWindowTitle("Widget");
     scene_->addItem(widget_);
 
-    chart_ = new ExChart();
     scene_->addItem(chart_);
 
-    const auto scene_width = 600.0;
-    const auto scene_height = 400.0;
-
-    resize(scene_width, scene_height);
-    scene_->setSceneRect(0, 0, scene_width, scene_height);
+    resize(size());
 
     setCursor(Qt::CrossCursor);
 
@@ -58,14 +66,14 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     glayout->setVerticalSpacing(0);
     glayout->setContentsMargins(0, 0, 0, 0);
 
-    chart_->setMinimumSize(320, 240);
+//    chart_->setMinimumSize(320, 240);
     glayout->addItem(chart_, Chart_GridRow, Chart_GridColumn, Qt::Alignment());
 
-    crex::ch::ExScale *vScale = new crex::ch::ExScale(Qt::Vertical);
-    glayout->addItem(vScale, PriceScale_GridRow, PriceScale_GridColumn, Qt::Alignment());
+    crex::ch::ExAxis *vScale = new crex::ch::ExAxis(Qt::Vertical);
+    glayout->addItem(vScale, PriceAxis_GridRow, PriceAxis_GridColumn, Qt::Alignment());
 
-    crex::ch::ExScale *hScale = new crex::ch::ExScale(Qt::Horizontal);
-    glayout->addItem(hScale, DateScale_GridRow, DateScale_GridColumn, Qt::Alignment());
+    crex::ch::ExAxis *hScale = new crex::ch::ExAxis(Qt::Horizontal);
+    glayout->addItem(hScale, DateAxis_GridRow, DateAxis_GridColumn, Qt::Alignment());
 
     crex::ch::ExItem *tBox = new crex::ch::ExItem();
     tBox->setMinimumSize(24, 24);
@@ -131,6 +139,7 @@ void ExChartView::resizeEvent(QResizeEvent *event)
 
     scene_->setSceneRect(QRectF(QPointF(0, 0), event->size()));
     widget_->resize(event->size());
+    moveCursorLines(vertical_cursor_->line().x1(), horizontal_cursor_->line().y1());
 }
 
 // Functions
