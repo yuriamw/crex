@@ -11,6 +11,7 @@
 #include <QGraphicsItem>
 
 #include "excandle.h"
+#include "exaxis.h"
 
 namespace crex::ch {
 
@@ -24,8 +25,17 @@ public:
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
+    ExAxis *verticalAxis() const;
+    ExAxis *horizontalAxis() const;
+    void setVerticalAxis(ExAxis * axis);
+    void setHorizontalAxis(ExAxis * axis);
+    void updateAxesGeometry();
+
 private:
     QList<crex::candle::ExCandle> candles_;
+
+    ExAxis *vertical_axis_;
+    ExAxis *horizontal_axis_;
 };
 
 } // namespace crex::ch

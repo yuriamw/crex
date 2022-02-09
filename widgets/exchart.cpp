@@ -1,14 +1,19 @@
 #include "widgets/exchart.h"
 
+#include "exaxis.h"
+
 #include "logger.h"
 
 namespace crex::ch {
 
 ExChart::ExChart(QGraphicsItem * parent)
     : ExItem(parent)
+    , vertical_axis_(nullptr)
+    , horizontal_axis_(nullptr)
 {
-    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+//    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     setMinimumSize(48, 32);
+    updateAxesGeometry();
 }
 
 int ExChart::appendCandle(qreal open, qreal close, qreal high, qreal low)
@@ -28,14 +33,12 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     (void)option;
     (void)widget;
 
-    QBrush brush;
     QPen pen;
-    QColor color(Qt::black);
 
-    brush.setStyle( Qt::SolidPattern);
-    brush.setColor(color);
-    pen.setColor(color);
-    painter->drawRect(0, 0, geometry().width(), geometry().height());
+    pen.setColor(Qt::blue);
+    pen.setWidth(1);
+    painter->setPen(pen);
+    painter->drawRect(0, 0, geometry().width() - 1, geometry().height() - 1);
 
     const auto candle_width = crex::candle::ExCandle::width() + 1;
 
@@ -61,6 +64,34 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
 
         painter->drawPolygon(p);
     }
+}
+
+void ExChart::setVerticalAxis(ExAxis * axis)
+{
+    vertical_axis_ = axis;
+}
+
+void ExChart::setHorizontalAxis(ExAxis * axis)
+{
+    horizontal_axis_ = axis;
+}
+
+ExAxis *ExChart::verticalAxis() const
+{
+    return vertical_axis_;
+}
+
+ExAxis *ExChart::horizontalAxis() const
+{
+    return horizontal_axis_;
+}
+
+void ExChart::updateAxesGeometry()
+{
+    if (vertical_axis_)
+        vertical_axis_->setRange(0, geometry().height());
+    if (horizontal_axis_)
+        horizontal_axis_->setRange(0, geometry().width());
 }
 
 } // namespace crex::ch

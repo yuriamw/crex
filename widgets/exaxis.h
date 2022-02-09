@@ -9,6 +9,8 @@
 #include <QStyleOptionGraphicsItem>
 #include <QWidget>
 #include <QGraphicsItem>
+#include <QFont>
+#include <QFontMetrics>
 
 namespace crex::ch {
 
@@ -17,19 +19,43 @@ class ExAxis : public ExItem
 public:
     ExAxis(const Qt::Orientation orientation = Qt::Horizontal, QGraphicsItem *parent = nullptr);
 
+    // Inherited from QGraphicsLayoutItem
+public:
+    void setGeometry(const QRectF &geom) override;
+
+protected:
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
+
+    // Inherited from QGraphicsItem
+public:
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-    const QVariant min() const;
-    const QVariant max() const;
-    void setMax(const QVariant &  max);
-    void setMin(const QVariant &  min);
-    void setRange(const QVariant & min, const QVariant & max);
+    // Interface
+    const QFont & font() const;
+    void setFont(const QFont & font);
+    const QFontMetrics fontMetrics() const;
+
+    qreal min() const;
+    qreal max() const;
+    void setMax(const qreal max);
+    void setMin(const qreal min);
+    void setRange(const qreal min, const qreal max);
 
 private:
+    void calculateSizeHint();
+    void paintHorizontal(QPainter *painter);
+
+    void paintVertical(QPainter *painter);
+    void paintVerticalLevels(QPainter *painter, const qreal botY, const qreal topY);
+
+private:
+    QFont font_;
+
     Qt::Orientation orientation_;
-    QVariant max_;
-    QVariant min_;
+    qreal max_;
+    qreal min_;
+    qreal geom_hint_;
 };
 
 } // namespace crex::ch

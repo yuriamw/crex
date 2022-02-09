@@ -1,5 +1,7 @@
 #include "exchartview.h"
 
+#include <algorithm>
+
 #include <QResizeEvent>
 
 #include <QGraphicsPolygonItem>
@@ -68,11 +70,13 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
 
     glayout->addItem(chart_, Chart_GridRow, Chart_GridColumn, Qt::Alignment());
 
-    crex::ch::ExAxis *vScale = new crex::ch::ExAxis(Qt::Vertical);
-    glayout->addItem(vScale, PriceAxis_GridRow, PriceAxis_GridColumn, Qt::Alignment());
+    crex::ch::ExAxis *axisX = new crex::ch::ExAxis(Qt::Horizontal);
+    glayout->addItem(axisX, DateAxis_GridRow, DateAxis_GridColumn, Qt::Alignment());
+    chart_->setHorizontalAxis(axisX);
 
-    crex::ch::ExAxis *hScale = new crex::ch::ExAxis(Qt::Horizontal);
-    glayout->addItem(hScale, DateAxis_GridRow, DateAxis_GridColumn, Qt::Alignment());
+    crex::ch::ExAxis *axisY = new crex::ch::ExAxis(Qt::Vertical);
+    glayout->addItem(axisY, PriceAxis_GridRow, PriceAxis_GridColumn, Qt::Alignment());
+    chart_->setVerticalAxis(axisY);
 
     crex::ch::ExItem *tBox = new crex::ch::ExItem();
     tBox->setMinimumSize(24, 24);
@@ -126,11 +130,13 @@ void ExChartView::resizeEvent(QResizeEvent *event)
     // https://code.woboq.org/qt5/qtcharts/src/charts/qchartview.cpp.html#335
     // TODO: investigate maximumSize
     setMinimumSize(widget_->minimumSize().toSize().expandedTo(minimumSize()));
-    //  setMaximumSize(maximumSize().boundedTo(widget_->minimumSize().toSize()));
+    // setMaximumSize(maximumSize().boundedTo(widget_->minimumSize().toSize()));
 
     scene_->setSceneRect(QRectF(QPointF(0, 0), event->size()));
     widget_->resize(event->size());
     moveCursorLines(vertical_cursor_->line().x1(), horizontal_cursor_->line().y1());
+
+    chart_->updateAxesGeometry();
 }
 
 // Functions
@@ -139,10 +145,18 @@ void ExChartView::simulateDataLine()
 {
     candles_ = crex::data::DataSim::getTriangle(32, 4);
 
+    qreal min = candles_[0].l;
+    qreal max = candles_[0].h;
+
     for (int i = 0; i < candles_.size(); i++)
     {
         chart_->appendCandle(candles_[i].o, candles_[i].c, candles_[i].h, candles_[i].l);
+        min = std::min(min, candles_[i].l);
+        max = std::max(max, candles_[i].h);
     }
+    const auto minV(std::min(0.0, min));
+    const auto maxV(std::max(max, chart_->geometry().height()));
+    chart_->verticalAxis()->setRange(minV, maxV);
 }
 
 // Cursor

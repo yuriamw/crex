@@ -51,6 +51,9 @@ void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
+    painter->setPen(Qt::black);
+    painter->drawRect(0, 0, geometry().width() - 1, geometry().height() - 1);
+
     painter->setPen(Qt::magenta);
     painter->setBrush(QBrush(Qt::magenta));
     QPointF p(geometry().size().width() / 2 + 1, geometry().size().height() / 2 + 1);
