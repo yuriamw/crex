@@ -44,7 +44,7 @@ QVector<crex::data::candle_data> DataSim::getLine(int len, bool randomize, QDate
         QDateTime dt = now.addSecs(-i * timeFrame_);
         candle.t = dt.toMSecsSinceEpoch();
 
-        TRACE("") << candle.o << candle.c << candle.h << candle.l << qint64(candle.t);
+//        TRACE("") << candle.o << candle.c << candle.h << candle.l << qint64(candle.t);
 
         vector[i] = candle;
     }
