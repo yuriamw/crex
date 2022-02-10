@@ -23,11 +23,6 @@ int ExChart::appendCandle(qreal open, qreal close, qreal high, qreal low)
     return candles_.size() - 1;
 }
 
-QRectF ExChart::boundingRect() const
-{
-    return QRectF(QPointF(0, 0), geometry().size());
-}
-
 void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     (void)option;

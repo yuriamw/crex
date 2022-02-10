@@ -35,6 +35,7 @@ namespace {
     const auto Toolbox_GridColumn = 2;
     const auto Toolbox_GridRow = 2;
 }
+
 /////////////////////////////////////////////////////////////////////////////
 ///
 ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
@@ -64,8 +65,8 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     setCursor(Qt::CrossCursor);
 
     QGraphicsGridLayout *glayout = new QGraphicsGridLayout();
-    glayout->setHorizontalSpacing(0);
-    glayout->setVerticalSpacing(0);
+    glayout->setHorizontalSpacing(1);
+    glayout->setVerticalSpacing(1);
     glayout->setContentsMargins(0, 0, 0, 0);
 
     glayout->addItem(chart_, Chart_GridRow, Chart_GridColumn, Qt::Alignment());
@@ -79,8 +80,6 @@ ExChartView::ExChartView(const QString & symbol_name, QWidget *parent)
     chart_->setVerticalAxis(axisY);
 
     crex::ch::ExItem *tBox = new crex::ch::ExItem();
-    tBox->setMinimumSize(24, 24);
-    tBox->setMaximumSize(24, 24);
     glayout->addItem(tBox, Toolbox_GridRow, Toolbox_GridColumn, Qt::Alignment());
 
     widget_->setLayout(glayout);

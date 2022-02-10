@@ -22,7 +22,6 @@ public:
 
     int appendCandle(qreal open, qreal close, qreal high, qreal low);
 
-    QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
     ExAxis *verticalAxis() const;

@@ -18,6 +18,8 @@ public:
     // Inherited from QGraphicsItem
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
+
+    QSizeF size() const;
 };
 
 } // namespace crex::ch
