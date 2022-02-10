@@ -150,11 +150,6 @@ void ExAxis::calculateSizeHint()
         int fontHeight = fontMetrics().height();
         geom_hint_ = fontHeight + AxisDecoration_Size + AxisDecoration_OuterMargin;
 
-        QRectF r = geometry();
-        r.setHeight(geom_hint_);
-        setGeometry(r);
-
-        updateGeometry();
     }
     else
     {
@@ -169,12 +164,6 @@ void ExAxis::calculateSizeHint()
         auto topHint = calc_hint(max_);
         auto botHint = calc_hint(min_);
         geom_hint_ = std::max(topHint, botHint);
-
-        QRectF r = geometry();
-        r.setWidth(geom_hint_);
-        setGeometry(r);
-
-        updateGeometry();
     }
 }
 

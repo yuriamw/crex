@@ -33,7 +33,7 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     pen.setColor(Qt::blue);
     pen.setWidth(1);
     painter->setPen(pen);
-    painter->drawRect(0, 0, geometry().width() - 1, geometry().height() - 1);
+    painter->drawRect(0, 0, size().width(), size().height());
 
     const auto candle_width = crex::candle::ExCandle::width() + 1;
 
@@ -84,9 +84,9 @@ ExAxis *ExChart::horizontalAxis() const
 void ExChart::updateAxesGeometry()
 {
     if (vertical_axis_)
-        vertical_axis_->setRange(0, geometry().height());
+        vertical_axis_->setRange(0, size().height());
     if (horizontal_axis_)
-        horizontal_axis_->setRange(0, geometry().width());
+        horizontal_axis_->setRange(0, size().width());
 }
 
 } // namespace crex::ch
