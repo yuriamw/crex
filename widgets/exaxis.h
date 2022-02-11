@@ -19,19 +19,18 @@ class ExAxis : public ExItem
 public:
     ExAxis(const Qt::Orientation orientation = Qt::Horizontal, QGraphicsItem *parent = nullptr);
 
-    // --- Inherited from QGraphicsLayoutItem -------------------------------------------
-protected:
-    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
-
     // --- Inherited from QGraphicsItem -------------------------------------------------
 public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
     // --- Interface --------------------------------------------------------------------
 public:
+    Qt::Orientation orientation() const;
     const QFont & font() const;
     void setFont(const QFont & font);
     const QFontMetrics fontMetrics() const;
+
+    virtual void setSize(const QSizeF & size) override;
 
     qreal min() const;
     qreal max() const;
@@ -50,8 +49,8 @@ private:
     QFont font_;
 
     Qt::Orientation orientation_;
-    qreal max_;
     qreal min_;
+    qreal max_;
     qreal geom_hint_;
 };
 

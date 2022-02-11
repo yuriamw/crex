@@ -27,43 +27,11 @@ ExAxis::ExAxis(const Qt::Orientation orientation, QGraphicsItem * parent)
     : ExItem(parent)
     , font_(QFont())
     , orientation_(orientation)
-    , max_(0)
     , min_(0)
+    , max_(1)
     , geom_hint_(getAxisMinimumSize(orientation_, font_))
 {
-    if (orientation_ == Qt::Horizontal)
-    {
-        setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
-    }
-    else
-    {
-        setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
-    }
-    setRange(min_, max_);
-}
-
-// --------------------------------------------------------------------------------
-// --- Inherited from QGraphicsLayoutItem -----------------------------------------
-
-QSizeF ExAxis::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
-{
-    switch (which) {
-        case Qt::MinimumSize:
-        case Qt::PreferredSize:
-            if (orientation_ == Qt::Horizontal)
-            {
-                return QSizeF(geometry().width(), geom_hint_);
-            }
-            else
-            {
-                return QSizeF(geom_hint_, geometry().height());
-            }
-        case Qt::MaximumSize:
-            return QSizeF(100000,100000);
-        default:
-            break;
-    }
-    return constraint;
+    calculateSizeHint();
 }
 
 // --------------------------------------------------------------------------------
@@ -93,14 +61,14 @@ void ExAxis::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
         pen.setColor(Qt::green);
 
     painter->setPen(pen);
-    painter->drawRect(0, 0, size().width(), size().height());
+    painter->drawRect(0, 0, size(true).width(), size(true).height());
 }
 
 // --------------------------------------------------------------------------------
 
 void ExAxis::paintHorizontal(QPainter *painter)
 {
-    painter->drawText(QRectF(20, 1, size().width() - 20, size().height()), "Horizontal");
+    painter->drawText(QRectF(20, 1, size(true).width() - 20, size(true).height()), "Horizontal");
 }
 
 void ExAxis::paintVertical(QPainter *painter)
@@ -116,7 +84,7 @@ void ExAxis::paintVertical(QPainter *painter)
     // min_ on bottom
     const qreal botVal = min_ + AxisDecoration_OuterMargin;
     const QString botLabel(QString("%1").arg(botVal, 0, 'f', 2));
-    const auto botY = size().height() - AxisDecoration_OuterMargin;
+    const auto botY = size(true).height() - AxisDecoration_OuterMargin;
     painter->drawText(QPointF(AxisDecoration_Size, botY), botLabel);
     painter->drawLine(0, botY, AxisDecoration_MajorLevelSize, botY);
 
@@ -136,11 +104,19 @@ void ExAxis::paintVerticalLevels(QPainter *painter, const qreal botY, const qrea
     const auto levelStep = range / count ;
     for (auto i = topY + levelStep; i < botY; i += levelStep)
     {
-        const qreal val = size().height() - i + AxisDecoration_OuterMargin;
+        const qreal val = size(true).height() - i + AxisDecoration_OuterMargin;
         const QString label(QString("%1").arg(val, 0, 'f', 2));
         painter->drawText(QPointF(AxisDecoration_Size, i), label);
         painter->drawLine(0, i, AxisDecoration_MinorLevelSize, i);
     }
+}
+
+void ExAxis::setSize(const QSizeF & new_size)
+{
+    if (orientation_ == Qt::Horizontal)
+        ExItem::setSize(QSizeF(new_size.width(), geom_hint_));
+    else
+        ExItem::setSize(QSizeF(geom_hint_, new_size.height()));
 }
 
 void ExAxis::calculateSizeHint()
@@ -150,6 +126,9 @@ void ExAxis::calculateSizeHint()
         int fontHeight = fontMetrics().height();
         geom_hint_ = fontHeight + AxisDecoration_Size + AxisDecoration_OuterMargin;
 
+        QSizeF s = size();
+        s.setHeight(geom_hint_);
+        setSize(s);
     }
     else
     {
@@ -164,10 +143,19 @@ void ExAxis::calculateSizeHint()
         auto topHint = calc_hint(max_);
         auto botHint = calc_hint(min_);
         geom_hint_ = std::max(topHint, botHint);
+
+        QSizeF s = size();
+        s.setWidth(geom_hint_);
+        setSize(s);
     }
 }
 
 // --------------------------------------------------------------------------------
+
+Qt::Orientation ExAxis::orientation() const
+{
+    return orientation_;
+}
 
 const QFont & ExAxis::font() const
 {

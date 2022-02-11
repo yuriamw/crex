@@ -4,7 +4,6 @@
 #include <QSizeF>
 #include <QRectF>
 #include <QPainter>
-#include <QGraphicsLineItem>
 #include <QGraphicsItem>
 
 #include "logger.h"
@@ -12,39 +11,15 @@
 namespace crex::ch {
 
 ExItem::ExItem(QGraphicsItem *parent)
-    : QGraphicsLayoutItem()
-    , QGraphicsItem(parent)
+    : QGraphicsItem(parent)
+    , size_(QSizeF(2, 2))
 {
-    setGraphicsItem(this);
-}
-
-// Inherited from QGraphicsLayoutItem
-void ExItem::setGeometry(const QRectF &geom)
-{
-    prepareGeometryChange();
-    QGraphicsLayoutItem::setGeometry(geom);
-    setPos(geom.topLeft());
-}
-
-QSizeF ExItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
-{
-    switch (which) {
-        case Qt::MinimumSize:
-            return QSizeF(6, 6);
-        case Qt::PreferredSize:
-            return QSizeF(24, 24);
-        case Qt::MaximumSize:
-            return QSizeF(100000,100000);
-        default:
-            break;
-    }
-    return constraint;
 }
 
 // Inherited from QGraphicsItem
 QRectF ExItem::boundingRect() const
 {
-    return QRectF(QPointF(0, 0), geometry().size());
+    return QRectF(QPointF(0, 0), size());
 }
 
 void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -53,7 +28,7 @@ void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     Q_UNUSED(widget);
 
     painter->setPen(Qt::black);
-    painter->drawRect(0, 0, size().width() - 1, size().height() - 1);
+    painter->drawRect(0, 0, size(true).width(), size(true).height());
 
     painter->setPen(Qt::magenta);
     painter->setBrush(QBrush(Qt::magenta));
@@ -68,9 +43,17 @@ void ExItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     painter->drawRect(QRectF(tl, br));
 }
 
-QSizeF ExItem::size() const
+void ExItem::setSize(const QSizeF &size)
 {
-    return QSizeF(geometry().size() - QSizeF(1, 1));
+    prepareGeometryChange();
+    size_ = size;
+}
+
+const QSizeF ExItem::size(bool bounded) const
+{
+    if (bounded)
+        return QSizeF(size_ - QSizeF(1, 1));
+    return size_;
 }
 
 } // namespace crex::ch

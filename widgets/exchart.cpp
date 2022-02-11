@@ -10,9 +10,8 @@ ExChart::ExChart(QGraphicsItem * parent)
     : ExItem(parent)
     , vertical_axis_(nullptr)
     , horizontal_axis_(nullptr)
+    , tool_box_(new ExItem(this))
 {
-//    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-    setMinimumSize(48, 32);
     updateAxesGeometry();
 }
 
@@ -28,12 +27,15 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     (void)option;
     (void)widget;
 
+    const QSizeF area(paintArea());
+    const QSizeF bound(area - QSizeF(1, 1));
+
     QPen pen;
 
     pen.setColor(Qt::blue);
     pen.setWidth(1);
     painter->setPen(pen);
-    painter->drawRect(0, 0, size().width(), size().height());
+    painter->drawRect(0, 0, bound.width(), bound.height());
 
     const auto candle_width = crex::candle::ExCandle::width() + 1;
 
@@ -43,8 +45,8 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
 
         QPolygonF p(candle.shape());
 
-        p.translate(geometry().width() - candle_width * (i + 1),
-                    geometry().height() - candle.high());
+        p.translate(bound.width() - candle_width * (i + 1),
+                    bound.height() - candle.high());
 
         QBrush brush;
         QPen pen;
@@ -61,24 +63,79 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     }
 }
 
-void ExChart::setVerticalAxis(ExAxis * axis)
+const QSizeF ExChart::paintArea() const
 {
-    vertical_axis_ = axis;
+    QSizeF area(size());
+    QSizeF delta(0, 0);
+
+    if (vertical_axis_)
+        delta.setWidth(vertical_axis_->size().width());
+    if (horizontal_axis_)
+        delta.setHeight(horizontal_axis_->size().height());
+
+    area -= delta;
+    return area;
 }
 
-void ExChart::setHorizontalAxis(ExAxis * axis)
+void ExChart::setSize(const QSizeF &new_size)
 {
-    horizontal_axis_ = axis;
+    ExItem::setSize(new_size);
+    updateAxesGeometry();
 }
 
-ExAxis *ExChart::verticalAxis() const
+void ExChart::setAxisGeometry(ExAxis * axis)
 {
-    return vertical_axis_;
+    if (!axis)
+        return;
+
+    if (axis->orientation() == Qt::Horizontal)
+    {
+        // Horizontal axis does not allow to change height
+        axis->setSize(QSizeF(paintArea().width(), 0));
+        axis->setPos(0, size().height() - axis->size().height());
+    }
+    else
+    {
+        // Vertical axis does not allow to change width
+        axis->setSize(QSizeF(0, paintArea().height()));
+        axis->setPos(size().width() - axis->size().width(), 0);
+    }
+    setToolBoxGeometry();
 }
 
-ExAxis *ExChart::horizontalAxis() const
+void ExChart::setToolBoxGeometry()
 {
-    return horizontal_axis_;
+    QSizeF sz(tool_box_->size());
+
+    if (vertical_axis_)
+        sz.setWidth(vertical_axis_->size().width());
+    if (horizontal_axis_)
+        sz.setHeight(horizontal_axis_->size().height());
+    tool_box_->setSize(sz);
+
+    QSizeF pa(paintArea());
+    QPointF pt(pa.width(), pa.height());
+    tool_box_->setPos(pt);
+}
+
+void ExChart::setAxis(Qt::Orientation orientation, ExAxis * axis)
+{
+
+    if (orientation == Qt::Horizontal)
+        horizontal_axis_ = axis;
+    else
+        vertical_axis_ = axis;
+
+    setAxisGeometry(this->axis(orientation));
+}
+
+ExAxis *ExChart::axis(Qt::Orientation orientation) const
+{
+    if (orientation == Qt::Horizontal)
+        return horizontal_axis_;
+    else
+        return vertical_axis_;
+
 }
 
 void ExChart::updateAxesGeometry()
@@ -87,6 +144,9 @@ void ExChart::updateAxesGeometry()
         vertical_axis_->setRange(0, size().height());
     if (horizontal_axis_)
         horizontal_axis_->setRange(0, size().width());
+
+    setAxisGeometry(vertical_axis_);
+    setAxisGeometry(horizontal_axis_);
 }
 
 } // namespace crex::ch

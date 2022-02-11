@@ -6,7 +6,6 @@
 #include <QList>
 #include <QRectF>
 #include <QPainter>
-#include <QStyleOptionGraphicsItem>
 #include <QWidget>
 #include <QGraphicsItem>
 
@@ -24,10 +23,15 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-    ExAxis *verticalAxis() const;
-    ExAxis *horizontalAxis() const;
-    void setVerticalAxis(ExAxis * axis);
-    void setHorizontalAxis(ExAxis * axis);
+    ExAxis *axis(Qt::Orientation orientation) const;
+    void setAxis(Qt::Orientation orientation, ExAxis * axis);
+
+    virtual void setSize(const QSizeF & size) override;
+
+private:
+    const QSizeF paintArea() const;
+    void setAxisGeometry(ExAxis * axis);
+    void setToolBoxGeometry();
     void updateAxesGeometry();
 
 private:
@@ -35,6 +39,7 @@ private:
 
     ExAxis *vertical_axis_;
     ExAxis *horizontal_axis_;
+    ExItem *tool_box_;
 };
 
 } // namespace crex::ch
