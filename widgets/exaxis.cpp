@@ -30,6 +30,8 @@ ExAxis::ExAxis(const Qt::Orientation orientation, QGraphicsItem * parent)
     , min_(0)
     , max_(1)
     , geom_hint_(getAxisMinimumSize(orientation_, font_))
+    , axis_format_("f")
+    , precision_(2)
 {
     calculateSizeHint();
 }
@@ -73,41 +75,32 @@ void ExAxis::paintHorizontal(QPainter *painter)
 
 void ExAxis::paintVertical(QPainter *painter)
 {
-    // max_ on top
-    const auto fontHeight = fontMetrics().height();
-    const auto topVal = max_ - fontHeight + AxisDecoration_OuterMargin; // max_ == height in pixels!!!
-    const QString topLabel(QString("%1").arg(topVal, 0, 'f', 2));
-    const auto topY = fontHeight + AxisDecoration_OuterMargin;
-    painter->drawText(QPointF(AxisDecoration_Size, topY), topLabel);
-    painter->drawLine(0, topY, AxisDecoration_MajorLevelSize, topY);
-
-    // min_ on bottom
-    const qreal botVal = min_ + AxisDecoration_OuterMargin;
-    const QString botLabel(QString("%1").arg(botVal, 0, 'f', 2));
-    const auto botY = size(true).height() - AxisDecoration_OuterMargin;
-    painter->drawText(QPointF(AxisDecoration_Size, botY), botLabel);
-    painter->drawLine(0, botY, AxisDecoration_MajorLevelSize, botY);
-
-    paintVerticalLevels(painter, botY, topY);
-}
-
-void ExAxis::paintVerticalLevels(QPainter *painter, const qreal botY, const qreal topY)
-{
     const auto fontHeight = fontMetrics().height();
 
-    const auto range = botY - topY;
+    const qreal topValPos = AxisDecoration_OuterMargin;
+    const qreal botValPos = size(true).height() - fontHeight - AxisDecoration_OuterMargin;
+
+    const auto range = botValPos - topValPos;
     const auto minStep = fontHeight * 3;
-    if (range / minStep < 2)
-        return;
+    const int count = range / minStep < 2 ? 2 : range / minStep; // MUST be int
 
-    const int count = range / minStep; // MUST be int
     const auto levelStep = range / count ;
-    for (auto i = topY + levelStep; i < botY; i += levelStep)
+    const auto valueStep = (max_ - min_) / count;
+    QPointF valPos(AxisDecoration_OuterMargin + AxisDecoration_MajorLevelSize, topValPos);
+    for (auto i = 0; i < count + 1; i++)
     {
-        const qreal val = size(true).height() - i + AxisDecoration_OuterMargin;
+        QSizeF valSize(size(true).width() - valPos.x() - AxisDecoration_OuterMargin, fontHeight + AxisDecoration_OuterMargin);
+        QRectF valRect(valPos, valSize);
+        QPointF levelPos(AxisDecoration_OuterMargin, valPos.y() + valSize.height() / 2);
+
+        const qreal val = max_ - valueStep * i;
         const QString label(QString("%1").arg(val, 0, 'f', 2));
-        painter->drawText(QPointF(AxisDecoration_Size, i), label);
-        painter->drawLine(0, i, AxisDecoration_MinorLevelSize, i);
+
+//        painter->drawRect(valRect);
+        painter->drawLine(levelPos.x(), levelPos.y(), AxisDecoration_OuterMargin + AxisDecoration_MajorLevelSize, levelPos.y());
+        painter->drawText(valRect, label);
+
+        valPos += QPointF(0, levelStep);
     }
 }
 
@@ -136,7 +129,7 @@ void ExAxis::calculateSizeHint()
         {
             int fontHeight = fontMetrics().height();
             qreal val = what - fontHeight + AxisDecoration_OuterMargin;
-            QString label = QString("%1").arg(val, 0, 'f', 2);
+            QString label = QString("%1").arg(val, 0, axis_format_.toLatin1()[0], precision_);
             int labelWidth = fontMetrics().horizontalAdvance(label);
             return labelWidth + AxisDecoration_Size + AxisDecoration_OuterMargin;
         };

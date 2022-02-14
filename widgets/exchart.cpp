@@ -140,11 +140,6 @@ ExAxis *ExChart::axis(Qt::Orientation orientation) const
 
 void ExChart::updateAxesGeometry()
 {
-    if (vertical_axis_)
-        vertical_axis_->setRange(0, size().height());
-    if (horizontal_axis_)
-        horizontal_axis_->setRange(0, size().width());
-
     setAxisGeometry(vertical_axis_);
     setAxisGeometry(horizontal_axis_);
 }

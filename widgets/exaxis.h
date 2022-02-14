@@ -43,7 +43,6 @@ private:
     void paintHorizontal(QPainter *painter);
 
     void paintVertical(QPainter *painter);
-    void paintVerticalLevels(QPainter *painter, const qreal botY, const qreal topY);
 
 private:
     QFont font_;
@@ -52,6 +51,8 @@ private:
     qreal min_;
     qreal max_;
     qreal geom_hint_;
+    QString axis_format_;
+    int precision_;
 };
 
 } // namespace crex::ch
