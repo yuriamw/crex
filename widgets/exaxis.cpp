@@ -82,6 +82,10 @@ void ExAxis::paintVertical(QPainter *painter)
 
     const auto range = botValPos - topValPos;
     const auto minStep = fontHeight * 3;
+
+    if ((range / minStep) < 0.5)
+        return;
+
     const int count = range / minStep < 2 ? 2 : range / minStep; // MUST be int
 
     const auto levelStep = range / count ;
@@ -95,6 +99,9 @@ void ExAxis::paintVertical(QPainter *painter)
 
         const qreal val = max_ - valueStep * i;
         const QString label(QString("%1").arg(val, 0, 'f', 2));
+
+        if (!boundingRect().contains(valRect))
+            return;
 
 //        painter->drawRect(valRect);
         painter->drawLine(levelPos.x(), levelPos.y(), AxisDecoration_OuterMargin + AxisDecoration_MajorLevelSize, levelPos.y());
