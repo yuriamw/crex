@@ -1,10 +1,11 @@
-#ifndef EXSCALE_H
-#define EXSCALE_H
+#ifndef EXAXIS_H
+#define EXAXIS_H
 
 #include "widgets/exitem.h"
 
-#include <QVariant>
+#include <QPointF>
 #include <QRectF>
+#include <QMarginsF>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QWidget>
@@ -29,6 +30,7 @@ public:
     const QFont & font() const;
     void setFont(const QFont & font);
     const QFontMetrics fontMetrics() const;
+    const QMarginsF margins() const;
 
     virtual void setSize(const QSizeF & size) override;
 
@@ -57,4 +59,4 @@ private:
 
 } // namespace crex::ch
 
-#endif // EXSCALE_H
+#endif // EXAXIS_H

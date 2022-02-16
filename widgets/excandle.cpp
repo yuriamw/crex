@@ -80,6 +80,7 @@ void ExCandle::prepareCandlePolygon()
     p << QPointF(candle_side_width + 1, high_ - top);
 
     polygon_ = p;
+
 //    polygon_.clear();
 //    polygon_ << QPointF(candle_side_width + 1, high_);
 //    polygon_ << QPointF(candle_side_width + 1, top);
@@ -127,9 +128,29 @@ qreal ExCandle::width()
     return candle_side_width * 2 + 1;
 }
 
+qreal ExCandle::sideWidth()
+{
+    return candle_side_width;
+}
+
 qreal ExCandle::height() const
 {
     return high_ - low_;
+}
+
+qreal ExCandle::top() const
+{
+    return isUp() ? close_ : open_;
+}
+
+qreal ExCandle::bottom() const
+{
+    return isUp() ? open_ : close_;
+}
+
+qreal ExCandle::openClose() const
+{
+    return isUp() ? close_ - open_ : open_ - close_;
 }
 
 } // namespace crex::candle

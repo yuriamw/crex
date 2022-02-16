@@ -138,7 +138,12 @@ void ExChartView::simulateDataLine()
         min = std::min(min, candles_[i].l);
         max = std::max(max, candles_[i].h);
     }
-    chart_->axis(Qt::Vertical)->setRange(min, max);
+    TRACE("") << min << max;
+    // Extend by 10%
+    max += max / 10.0;
+    min -= min / 10.0;
+//    chart_->axis(Qt::Vertical)->setRange(min, max);
+    chart_->axis(Qt::Vertical)->setRange(21, 125);
 }
 
 // Cursor

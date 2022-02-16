@@ -1,6 +1,5 @@
 #include "widgets/exaxis.h"
 
-#include <QVariant>
 #include <QFont>
 #include <QFontMetrics>
 #include <QMarginsF>
@@ -170,6 +169,12 @@ void ExAxis::setFont(const QFont & font)
 const QFontMetrics ExAxis::fontMetrics() const
 {
     return QFontMetrics(font_);
+}
+
+const QMarginsF ExAxis::margins() const
+{
+    const auto margin = orientation_ == Qt::Horizontal ? 0 : fontMetrics().height() / 2 + AxisDecoration_OuterMargin;
+    return QMarginsF(0, margin, 0, margin);
 }
 
 qreal ExAxis::min() const

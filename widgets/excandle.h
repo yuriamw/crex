@@ -19,6 +19,8 @@ public:
     qreal close() const;
     qreal high() const;
     qreal low() const;
+    qreal top() const;
+    qreal bottom() const;
 
     QGraphicsItem *item();
     const QPolygonF & shape() const;
@@ -26,7 +28,9 @@ public:
     bool isDown() const;
 
     static qreal width();
+    static qreal sideWidth();
     qreal height() const;
+    qreal openClose() const;
 
 private:
     void prepareCandlePolygon();

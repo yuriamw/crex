@@ -1,5 +1,10 @@
 #include "widgets/exchart.h"
 
+#include <QLineF>
+#include <QRectF>
+#include <QPointF>
+#include <QMarginsF>
+
 #include "exaxis.h"
 
 #include "logger.h"
@@ -30,19 +35,89 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     const QSizeF area(paintArea());
     const QSizeF bound(area - QSizeF(1, 1));
 
-    QPen pen;
+    // Outline
+    {
+        QPen pen;
 
-    pen.setColor(Qt::blue);
-    pen.setWidth(1);
-    painter->setPen(pen);
+        pen.setColor(Qt::blue);
+        pen.setWidth(1);
+        painter->setPen(pen);
     painter->drawRect(0, 0, bound.width(), bound.height());
+    }
 
+    // Margins
+    {
+        QPen oldPen(painter->pen());
+        QBrush oldBrush(painter->brush());
+
+        QPen pen(painter->pen());
+        pen.setColor(Qt::lightGray);
+        pen.setWidth(1);
+        pen.setStyle(Qt::SolidLine);
+        painter->setPen(pen);
+
+        QBrush brush(painter->brush());
+        brush.setColor(Qt::white);
+        brush.setStyle(Qt::SolidPattern);
+        painter->setBrush(brush);
+
+        QRectF rect(QPointF(0, 0), paintArea());
+        rect -= axis(Qt::Vertical)->margins();
+        painter->drawRect(rect);
+
+        painter->setPen(oldPen);
+        painter->setBrush(oldBrush);
+    }
+
+    // Candles
     const auto candle_width = crex::candle::ExCandle::width() + 1;
+    const auto ax = axis(Qt::Vertical);
+    const auto axis_scale = (ax->max() - ax->min()) / (ax->size().height() - ax->margins().top() - ax->margins().bottom());
+    const QSizeF clipSize(bound - QSizeF(0, ax->margins().bottom()));
+    const QRectF clipRect(QPointF(0, ax->margins().top()), QSizeF(bound.width(), bound.height() - ax->margins().top() - ax->margins().bottom()));
 
     for (int i = 0; i < candles_.size(); i++)
     {
         const crex::candle::ExCandle & candle(candles_.at(i));
+#if 1
+        // Draw line from top to bottom to allow to translate it to rect
+        const auto lineY1 = (candle.high() - ax->min()) / axis_scale;
+        const auto lineY2 = (candle.low() - ax->min()) / axis_scale;
+        QLineF candle_line(0.0, clipSize.height() - lineY1, 0.0, clipSize.height() - lineY2);
+        candle_line.translate(clipSize.width() - candle_width * (i + 1), 0);
 
+        const auto bodyY1 = (candle.top() - ax->min()) / axis_scale;
+        const auto bodyY2 = candle.openClose() / axis_scale;
+        QRectF candle_body(QPointF(clipSize.width() - candle_width * (i + 1), clipSize.height() - bodyY1), QSizeF(candle.width(), bodyY2));
+        candle_body.translate( - candle.sideWidth(), 0);
+
+        // Convert line to rect and clip both HL-line and OC-body
+        QRectF line_rect( candle_line.p1(), QSizeF(0.5, candle_line.dy()) );
+        line_rect &= clipRect;
+        QRectF body_rect(clipRect & candle_body);
+
+        if ( body_rect.isEmpty() && line_rect.isEmpty())
+            continue;
+
+        QBrush brush;
+        QPen pen;
+        QColor color(candle.isDown() ? Qt::red : Qt::darkGreen);
+
+        brush.setStyle( Qt::SolidPattern);
+        brush.setColor(color);
+        pen.setStyle( Qt::SolidLine);
+        pen.setColor(color);
+        pen.setWidth(1);
+
+        painter->setBrush(brush);
+        painter->setPen(pen);
+
+        // QRectF with 1 px size drwas it's shape using two lines
+        // the resulting drawings is 2 px
+        // We draw it as painter->pen().width() line
+        painter->drawLine(line_rect.x(), line_rect.y(), line_rect.x(), line_rect.y() + line_rect.height());
+        painter->drawRect(body_rect);
+#else
         QPolygonF p(candle.shape());
 
         p.translate(bound.width() - candle_width * (i + 1),
@@ -60,6 +135,7 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
         painter->setPen(pen);
 
         painter->drawPolygon(p);
+#endif
     }
 }
 
