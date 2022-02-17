@@ -72,31 +72,56 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     // Candles
     const auto candle_width = crex::candle::ExCandle::width() + 1;
     const auto ax = axis(Qt::Vertical);
-    const auto axis_scale = (ax->max() - ax->min()) / (ax->size().height() - ax->margins().top() - ax->margins().bottom());
     const QSizeF clipSize(bound - QSizeF(0, ax->margins().bottom()));
     const QRectF clipRect(QPointF(0, ax->margins().top()), QSizeF(bound.width(), bound.height() - ax->margins().top() - ax->margins().bottom()));
 
-    for (int i = 0; i < candles_.size(); i++)
+    const auto visible_candles = bound.width() / candle_width;
+    const auto candles_count = candles_.size() > visible_candles ? visible_candles : candles_.size();
+
+    for (int i = 0; i < candles_count - 1; i++)
     {
         const crex::candle::ExCandle & candle(candles_.at(i));
-#if 1
-        // Draw line from top to bottom to allow to translate it to rect
-        const auto lineY1 = (candle.high() - ax->min()) / axis_scale;
-        const auto lineY2 = (candle.low() - ax->min()) / axis_scale;
-        QLineF candle_line(0.0, clipSize.height() - lineY1, 0.0, clipSize.height() - lineY2);
-        candle_line.translate(clipSize.width() - candle_width * (i + 1), 0);
 
-        const auto bodyY1 = (candle.top() - ax->min()) / axis_scale;
-        const auto bodyY2 = candle.openClose() / axis_scale;
-        QRectF candle_body(QPointF(clipSize.width() - candle_width * (i + 1), clipSize.height() - bodyY1), QSizeF(candle.width(), bodyY2));
-        candle_body.translate( - candle.sideWidth(), 0);
+        // Draw line from top to bottom to make clipping easier
+        QLineF lineHL(candle.lineHL(clipSize.width() - candle_width * (i + 1), clipSize.height(), ax->min(), ax->max()));
+        QRectF rectOC(candle.rectOC(clipSize.width() - candle_width * (i + 1), clipSize.height(), ax->min(), ax->max()));
 
-        // Convert line to rect and clip both HL-line and OC-body
-        QRectF line_rect( candle_line.p1(), QSizeF(0.5, candle_line.dy()) );
-        line_rect &= clipRect;
-        QRectF body_rect(clipRect & candle_body);
+        // Clip HL line
+        const int TOP = 1;
+        const int BOT = 2;
+        const auto vcode = [&](const qreal y)
+        {
+            return (y < clipRect.top() ? TOP : 0) | (y > clipRect.bottom() ? BOT : 0);
+        };
 
-        if ( body_rect.isEmpty() && line_rect.isEmpty())
+        const int outside_1 = vcode(lineHL.y1());
+        const int outside_2 = vcode(lineHL.y2());
+        // Both on the same side out of rect
+        bool outsideHL = outside_1 & outside_2;
+        if (! outsideHL)
+        {
+            // Intersect top of rect
+            if (outside_1 && (! outside_2))
+            {
+                lineHL.setP1(QPointF(lineHL.x1(), clipRect.top()));
+            }
+            // Intersect bottom of rect
+            else if (( !outside_1) && outside_2)
+            {
+                lineHL.setP2(QPointF(lineHL.x2(), clipRect.bottom()));
+            }
+            // Intersect top AND bottom of rect
+            else if (outside_1 && outside_2)
+            {
+                lineHL.setP1(QPointF(lineHL.x1(), clipRect.top()));
+                lineHL.setP2(QPointF(lineHL.x2(), clipRect.bottom()));
+            }
+        }
+
+        // Clip body rect
+        rectOC &= clipRect;
+
+        if (rectOC.isEmpty() && outsideHL)
             continue;
 
         QBrush brush;
@@ -112,30 +137,8 @@ void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
         painter->setBrush(brush);
         painter->setPen(pen);
 
-        // QRectF with 1 px size drwas it's shape using two lines
-        // the resulting drawings is 2 px
-        // We draw it as painter->pen().width() line
-        painter->drawLine(line_rect.x(), line_rect.y(), line_rect.x(), line_rect.y() + line_rect.height());
-        painter->drawRect(body_rect);
-#else
-        QPolygonF p(candle.shape());
-
-        p.translate(bound.width() - candle_width * (i + 1),
-                    bound.height() - candle.high());
-
-        QBrush brush;
-        QPen pen;
-        QColor color(candle.isDown() ? Qt::red : Qt::darkGreen);
-
-        brush.setStyle( Qt::SolidPattern);
-        brush.setColor(color);
-        pen.setColor(color);
-
-        painter->setBrush(brush);
-        painter->setPen(pen);
-
-        painter->drawPolygon(p);
-#endif
+        painter->drawLine(lineHL);
+        painter->drawRect(rectOC);
     }
 }
 
