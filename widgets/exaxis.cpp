@@ -10,10 +10,11 @@ namespace crex::ch {
 
 namespace {
     const auto AxisDecoration_OuterMargin       = 2.0;
+    const auto AxisDecoration_InnerMargin       = 2.0;
 
     const auto AxisDecoration_MajorLevelSize    = 4.0;
     const auto AxisDecoration_MinorLevelSize    = 2.0;
-    const auto AxisDecoration_Size              = AxisDecoration_MajorLevelSize + AxisDecoration_OuterMargin;
+    const auto AxisDecoration_Size              = AxisDecoration_MajorLevelSize + AxisDecoration_OuterMargin + AxisDecoration_InnerMargin;
 
     qreal getAxisMinimumSize(const Qt::Orientation orient, const QFont & fnt)
     {
@@ -89,7 +90,7 @@ void ExAxis::paintVertical(QPainter *painter)
 
     const auto levelStep = range / count ;
     const auto valueStep = (max_ - min_) / count;
-    QPointF valPos(AxisDecoration_OuterMargin + AxisDecoration_MajorLevelSize, topValPos);
+    QPointF valPos(AxisDecoration_Size, topValPos);
     for (auto i = 0; i < count + 1; i++)
     {
         QSizeF valSize(size(true).width() - valPos.x() - AxisDecoration_OuterMargin, fontHeight + AxisDecoration_OuterMargin);
@@ -103,7 +104,7 @@ void ExAxis::paintVertical(QPainter *painter)
             return;
 
 //        painter->drawRect(valRect);
-        painter->drawLine(levelPos.x(), levelPos.y(), AxisDecoration_OuterMargin + AxisDecoration_MajorLevelSize, levelPos.y());
+        painter->drawLine(levelPos.x(), levelPos.y(), AxisDecoration_OuterMargin + AxisDecoration_MinorLevelSize, levelPos.y());
         painter->drawText(valRect, label);
 
         valPos += QPointF(0, levelStep);
@@ -115,7 +116,13 @@ void ExAxis::setSize(const QSizeF & new_size)
     if (orientation_ == Qt::Horizontal)
         ExItem::setSize(QSizeF(new_size.width(), geom_hint_));
     else
+    {
+        const auto old_scale = (max_ - min_) / size().height();
+        const auto new_range = old_scale * new_size.height();
+        const auto offset = new_range - (max_ - min_);
+        setRange(min_ - offset / 2, max_ + offset / 2);
         ExItem::setSize(QSizeF(geom_hint_, new_size.height()));
+    }
 }
 
 void ExAxis::calculateSizeHint()
@@ -124,17 +131,11 @@ void ExAxis::calculateSizeHint()
     {
         int fontHeight = fontMetrics().height();
         geom_hint_ = fontHeight + AxisDecoration_Size + AxisDecoration_OuterMargin;
-
-        QSizeF s = size();
-        s.setHeight(geom_hint_);
-        setSize(s);
     }
     else
     {
-        const auto calc_hint = [&](qreal what)
+        const auto calc_hint = [&](const qreal val)
         {
-            int fontHeight = fontMetrics().height();
-            qreal val = what - fontHeight + AxisDecoration_OuterMargin;
             QString label = QString("%1").arg(val, 0, axis_format_.toLatin1()[0], precision_);
             int labelWidth = fontMetrics().horizontalAdvance(label);
             return labelWidth + AxisDecoration_Size + AxisDecoration_OuterMargin;
@@ -142,10 +143,6 @@ void ExAxis::calculateSizeHint()
         auto topHint = calc_hint(max_);
         auto botHint = calc_hint(min_);
         geom_hint_ = std::max(topHint, botHint);
-
-        QSizeF s = size();
-        s.setWidth(geom_hint_);
-        setSize(s);
     }
 }
 

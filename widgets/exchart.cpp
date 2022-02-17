@@ -219,8 +219,8 @@ ExAxis *ExChart::axis(Qt::Orientation orientation) const
 
 void ExChart::updateAxesGeometry()
 {
-    setAxisGeometry(vertical_axis_);
     setAxisGeometry(horizontal_axis_);
+    setAxisGeometry(vertical_axis_);
 }
 
 } // namespace crex::ch
