@@ -1,8 +1,8 @@
 #ifndef EXCANDLE_H
 #define EXCANDLE_H
 
-#include <QGraphicsItem>
-#include <QGraphicsPolygonItem>
+#include <QLineF>
+#include <QRectF>
 
 namespace crex::candle {
 
@@ -11,8 +11,9 @@ auto const candle_side_width = 2;
 class ExCandle
 {
 public:
-    explicit ExCandle(QGraphicsItem *parent = nullptr);
-    explicit ExCandle(const qreal open, const qreal close, const qreal high, const qreal low, QGraphicsItem *parent = nullptr);
+    explicit ExCandle();
+    explicit ExCandle(const qreal open, const qreal close, const qreal high, const qreal low);
+
     void setCandle(const qreal open, const qreal close, const qreal high, const qreal low);
 
     qreal open() const;
@@ -22,22 +23,18 @@ public:
     qreal top() const;
     qreal bottom() const;
 
-    QGraphicsItem *item();
-    const QPolygonF & shape() const;
     bool isUp() const;
     bool isDown() const;
 
     static qreal width();
     static qreal sideWidth();
-    qreal height() const;
-    qreal openClose() const;
+    qreal heightHL() const;
+    qreal heightOC() const;
+
+    const QLineF lineHL(const qreal x, const qreal height, const qreal min, const qreal max) const;
+    const QRectF rectOC(const qreal x, const qreal height, const qreal min, const qreal max) const;
 
 private:
-    void prepareCandlePolygon();
-
-private:
-    QGraphicsPolygonItem *polygon_item_;
-    QPolygonF polygon_;
     qreal open_;
     qreal close_;
     qreal high_;

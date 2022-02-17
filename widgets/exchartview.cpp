@@ -143,7 +143,7 @@ void ExChartView::simulateDataLine()
     max += max / 10.0;
     min -= min / 10.0;
 //    chart_->axis(Qt::Vertical)->setRange(min, max);
-    chart_->axis(Qt::Vertical)->setRange(21, 125);
+    chart_->axis(Qt::Vertical)->setRange(0, 150);
 }
 
 // Cursor
