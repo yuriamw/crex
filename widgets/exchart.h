@@ -1,47 +1,49 @@
-#ifndef CHART_H
-#define CHART_H
+#ifndef EXCHART_H
+#define EXCHART_H
 
-#include "widgets/exitem.h"
+#include <qcustomplot.h>
 
-#include <QList>
-#include <QRectF>
-#include <QPainter>
-#include <QWidget>
-#include <QGraphicsItem>
+#include <QSharedPointer>
+#include <QVector>
+#include <QString>
+#include <QResizeEvent>
+#include <QMouseEvent>
+#include <QToolButton>
+#include <QLabel>
 
-#include "excandle.h"
-#include "exaxis.h"
+namespace crex::chart {
 
-namespace crex::ch {
-
-class ExChart : public ExItem
+class ExChart : public QCustomPlot
 {
 public:
-    ExChart(QGraphicsItem *parent = nullptr);
+    ExChart(QWidget *parent = nullptr);
 
-    int appendCandle(qreal open, qreal close, qreal high, qreal low);
+    void setCandles(QSharedPointer<QCPFinancialDataContainer> cont);
 
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+public slots:
+    void switchTF();
 
-    ExAxis *axis(Qt::Orientation orientation) const;
-    void setAxis(Qt::Orientation orientation, ExAxis * axis);
-
-    virtual void setSize(const QSizeF & size) override;
-
-private:
-    const QSizeF paintArea() const;
-    void setAxisGeometry(ExAxis * axis);
-    void setToolBoxGeometry();
-    void updateAxesGeometry();
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
-    QList<crex::candle::ExCandle> candles_;
+    void createTimeFrameButton();
+    void placeTimeFrameButton();
+    void placeOlhcLabel(const QString &s = QString());
 
-    ExAxis *vertical_axis_;
-    ExAxis *horizontal_axis_;
-    ExItem *tool_box_;
+private:
+    QCPItemLine *hCursorLine;
+    QCPItemLine *vCursorLine;
+    QVector<QCPItemLine *> cursorLines;
+
+    QCPFinancial *financial;
+
+    QString timeFrame;
+    QToolButton *tfButton;
+    QLabel *olhcDisplay;
 };
 
-} // namespace crex::ch
+} // namespace crex::chart
 
-#endif // CHART_H
+#endif // EXCHART_H

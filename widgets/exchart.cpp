@@ -1,226 +1,166 @@
 #include "widgets/exchart.h"
 
-#include <QLineF>
-#include <QRectF>
-#include <QPointF>
-#include <QMarginsF>
+#include <qcustomplot.h>
 
-#include "exaxis.h"
+#include <QSharedPointer>
+#include <QCursor>
 
-#include "logger.h"
+namespace crex::chart {
 
-namespace crex::ch {
-
-ExChart::ExChart(QGraphicsItem * parent)
-    : ExItem(parent)
-    , vertical_axis_(nullptr)
-    , horizontal_axis_(nullptr)
-    , tool_box_(new ExItem(this))
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::ExChart
+/// \param parent
+///
+ExChart::ExChart(QWidget *parent):
+    QCustomPlot(parent)
+  , hCursorLine(new QCPItemLine(this))
+  , vCursorLine(new QCPItemLine(this))
+  , timeFrame("1H")
+  , tfButton(new QToolButton(this))
+  , olhcDisplay(new QLabel("OLHC", this))
 {
-    updateAxesGeometry();
-}
+    yAxis->setVisible(false);
+    yAxis2->setVisible(true);
+    connect(yAxis, SIGNAL(rangeChanged(QCPRange)), yAxis2, SLOT(setRange(QCPRange)));
 
-int ExChart::appendCandle(qreal open, qreal close, qreal high, qreal low)
-{
-    crex::candle::ExCandle candle(open, close, high, low);
-    candles_.append(candle);
-    return candles_.size() - 1;
-}
-
-void ExChart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-    (void)option;
-    (void)widget;
-
-    const QSizeF area(paintArea());
-    const QSizeF bound(area - QSizeF(1, 1));
-
-    // Outline
+    cursorLines.append(hCursorLine);
+    cursorLines.append(vCursorLine);
+    for (int i = 0; i < cursorLines.size(); i++)
     {
-        QPen pen;
-
-        pen.setColor(Qt::blue);
-        pen.setWidth(1);
-        painter->setPen(pen);
-    painter->drawRect(0, 0, bound.width(), bound.height());
+        cursorLines.at(i)->start->setType(QCPItemPosition::ptAbsolute);
+        cursorLines.at(i)->end->setType(QCPItemPosition::ptAbsolute);
+        cursorLines.at(i)->setPen(QPen(Qt::DotLine));
     }
 
-    // Margins
-    {
-        QPen oldPen(painter->pen());
-        QBrush oldBrush(painter->brush());
+    financial = new QCPFinancial(xAxis, yAxis2);
+    financial->setChartStyle(QCPFinancial::csCandlestick);
+    financial->setWidthType(QCPFinancial::wtAbsolute);
+    financial->setWidth(5);
 
-        QPen pen(painter->pen());
-        pen.setColor(Qt::lightGray);
-        pen.setWidth(1);
-        pen.setStyle(Qt::SolidLine);
-        painter->setPen(pen);
+    QSharedPointer<QCPAxisTickerDateTime> xTicker = QSharedPointer<QCPAxisTickerDateTime>(new QCPAxisTickerDateTime);
+    xAxis->setTicker(xTicker);
+    setCursor(QCursor(Qt::CrossCursor));
 
-        QBrush brush(painter->brush());
-        brush.setColor(Qt::white);
-        brush.setStyle(Qt::SolidPattern);
-        painter->setBrush(brush);
+    setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
-        QRectF rect(QPointF(0, 0), paintArea());
-        rect -= axis(Qt::Vertical)->margins();
-        painter->drawRect(rect);
-
-        painter->setPen(oldPen);
-        painter->setBrush(oldBrush);
-    }
-
-    // Candles
-    const auto candle_width = crex::candle::ExCandle::width() + 1;
-    const auto ax = axis(Qt::Vertical);
-    const QSizeF clipSize(bound - QSizeF(0, ax->margins().bottom()));
-    const QRectF clipRect(QPointF(0, ax->margins().top()), QSizeF(bound.width(), bound.height() - ax->margins().top() - ax->margins().bottom()));
-
-    const auto visible_candles = bound.width() / candle_width;
-    const auto candles_count = candles_.size() > visible_candles ? visible_candles : candles_.size();
-
-    for (int i = 0; i < candles_count - 1; i++)
-    {
-        const crex::candle::ExCandle & candle(candles_.at(i));
-
-        // Draw line from top to bottom to make clipping easier
-        QLineF lineHL(candle.lineHL(clipSize.width() - candle_width * (i + 1), clipSize.height(), ax->min(), ax->max()));
-        QRectF rectOC(candle.rectOC(clipSize.width() - candle_width * (i + 1), clipSize.height(), ax->min(), ax->max()));
-
-        // Clip HL line
-        const int TOP = 1;
-        const int BOT = 2;
-        const auto vcode = [&](const qreal y)
-        {
-            return (y < clipRect.top() ? TOP : 0) | (y > clipRect.bottom() ? BOT : 0);
-        };
-
-        const int outside_1 = vcode(lineHL.y1());
-        const int outside_2 = vcode(lineHL.y2());
-        // Both on the same side out of rect
-        bool outsideHL = outside_1 & outside_2;
-        if (! outsideHL)
-        {
-            // Intersect top of rect
-            if (outside_1 && (! outside_2))
-            {
-                lineHL.setP1(QPointF(lineHL.x1(), clipRect.top()));
-            }
-            // Intersect bottom of rect
-            else if (( !outside_1) && outside_2)
-            {
-                lineHL.setP2(QPointF(lineHL.x2(), clipRect.bottom()));
-            }
-            // Intersect top AND bottom of rect
-            else if (outside_1 && outside_2)
-            {
-                lineHL.setP1(QPointF(lineHL.x1(), clipRect.top()));
-                lineHL.setP2(QPointF(lineHL.x2(), clipRect.bottom()));
-            }
-        }
-
-        // Clip body rect
-        rectOC &= clipRect;
-
-        if (rectOC.isEmpty() && outsideHL)
-            continue;
-
-        QBrush brush;
-        QPen pen;
-        QColor color(candle.isDown() ? Qt::red : Qt::darkGreen);
-
-        brush.setStyle( Qt::SolidPattern);
-        brush.setColor(color);
-        pen.setStyle( Qt::SolidLine);
-        pen.setColor(color);
-        pen.setWidth(1);
-
-        painter->setBrush(brush);
-        painter->setPen(pen);
-
-        painter->drawLine(lineHL);
-        painter->drawRect(rectOC);
-    }
+    createTimeFrameButton();
 }
 
-const QSizeF ExChart::paintArea() const
+void ExChart::setCandles(QSharedPointer<QCPFinancialDataContainer> cont)
 {
-    QSizeF area(size());
-    QSizeF delta(0, 0);
-
-    if (vertical_axis_)
-        delta.setWidth(vertical_axis_->size().width());
-    if (horizontal_axis_)
-        delta.setHeight(horizontal_axis_->size().height());
-
-    area -= delta;
-    return area;
+    financial->setData(cont);
 }
 
-void ExChart::setSize(const QSizeF &new_size)
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::resizeEvent
+/// \param event
+///
+void ExChart::resizeEvent(QResizeEvent *event)
 {
-    ExItem::setSize(new_size);
-    updateAxesGeometry();
-}
+    QCustomPlot::resizeEvent(event);
 
-void ExChart::setAxisGeometry(ExAxis * axis)
-{
-    if (!axis)
+    if (financial->widthType() != QCPFinancial::wtAbsolute)
         return;
 
-    if (axis->orientation() == Qt::Horizontal)
+//    qDebug() << event << viewport() << axisRect(0)->size() << axisRect(0)->topLeft() << axisRect(0)->bottomRight() << axisRectCount() << graphCount();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::mouseMoveEvent
+/// \param event
+///
+void ExChart::mouseMoveEvent(QMouseEvent *event)
+{
+    QCustomPlot::mouseMoveEvent(event);
+
+    QRect bounds = QRect(axisRect(0)->topLeft(), axisRect(0)->bottomRight());
+    if (event->x() >= bounds.topLeft().x() && event->x() < bounds.bottomRight().x())
     {
-        // Horizontal axis does not allow to change height
-        axis->setSize(QSizeF(paintArea().width(), 0));
-        axis->setPos(0, size().height() - axis->size().height());
+        vCursorLine->start->setCoords(event->x(), bounds.topLeft().y());
+        vCursorLine->end->setCoords(event->x(), bounds.bottomRight().y());
     }
-    else
+    if (event->y() >= bounds.topLeft().y() && event->y() < bounds.bottomRight().y())
     {
-        // Vertical axis does not allow to change width
-        axis->setSize(QSizeF(0, paintArea().height()));
-        axis->setPos(size().width() - axis->size().width(), 0);
+        hCursorLine->start->setCoords(bounds.topLeft().x(), event->y());
+        hCursorLine->end->setCoords(bounds.bottomRight().x(), event->y());
     }
-    setToolBoxGeometry();
+    replot();
+
+    const auto d = financial->data()->findBegin(xAxis->pixelToCoord(event->x()), true);
+    QString olhc(QString("%1 O:%2 H:%3 L:%4 C:%5")
+                 .arg(QDateTime::fromMSecsSinceEpoch(d->key * 1000).toString("yyyy-MM-dd hh:mm"))
+                 .arg(d->open)
+                 .arg(d->high)
+                 .arg(d->low)
+                 .arg(d->close)
+            );
+
+    placeOlhcLabel(olhc);
 }
 
-void ExChart::setToolBoxGeometry()
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::createTimeFrameButton
+///
+void ExChart::createTimeFrameButton()
 {
-    QSizeF sz(tool_box_->size());
+    tfButton->move(4, 4);
 
-    if (vertical_axis_)
-        sz.setWidth(vertical_axis_->size().width());
-    if (horizontal_axis_)
-        sz.setHeight(horizontal_axis_->size().height());
-    tool_box_->setSize(sz);
+    placeTimeFrameButton();
 
-    QSizeF pa(paintArea());
-    QPointF pt(pa.width(), pa.height());
-    tool_box_->setPos(pt);
+    connect(tfButton, &QToolButton::clicked, this, &ExChart::switchTF);
 }
 
-void ExChart::setAxis(Qt::Orientation orientation, ExAxis * axis)
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::placeTimeFrameButton
+///
+void ExChart::placeTimeFrameButton()
 {
+    tfButton->setText(timeFrame);
 
-    if (orientation == Qt::Horizontal)
-        horizontal_axis_ = axis;
-    else
-        vertical_axis_ = axis;
+    QFontMetrics fm(tfButton->font());
+    int w = fm.width(timeFrame);
+    int h = fm.height();
+    QSize sz(w, h);
+    sz += QSize(4, 2);
 
-    setAxisGeometry(this->axis(orientation));
+    tfButton->resize(sz);
+    tfButton->setFocusPolicy(Qt::NoFocus);
+
+    olhcDisplay->move(tfButton->pos().x() + tfButton->size().width() + 4, 4);
 }
 
-ExAxis *ExChart::axis(Qt::Orientation orientation) const
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::placeOlhcLabel
+///
+void ExChart::placeOlhcLabel(const QString &s)
 {
-    if (orientation == Qt::Horizontal)
-        return horizontal_axis_;
-    else
-        return vertical_axis_;
-
+    olhcDisplay->setText(s);
+    QFontMetrics fm(olhcDisplay->font());
+    int w = fm.width(s);
+    int h = fm.height();
+    QSize sz(w, h);
+//    sz += QSize(4, 2);
+    olhcDisplay->resize(sz);
 }
 
-void ExChart::updateAxesGeometry()
+/////////////////////////////////////////////////////////////////////////////
+/// \brief ExChart::switchTF
+///
+void ExChart::switchTF()
 {
-    setAxisGeometry(horizontal_axis_);
-    setAxisGeometry(vertical_axis_);
+    static QString timeFrames[] = { "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M", QString()};
+
+    for (int i = 0; !timeFrames[i].isNull(); i++)
+    {
+        if (timeFrames[i] == timeFrame)
+        {
+            i++; if (timeFrames[i] == "") i = 0;
+            timeFrame = timeFrames[i];
+            break;
+        }
+    }
+    placeTimeFrameButton();
 }
 
-} // namespace crex::ch
+} // namespace crex::chart
+

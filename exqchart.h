@@ -1,5 +1,5 @@
-#ifndef EXCHART_H
-#define EXCHART_H
+#ifndef EXQCHART_H
+#define EXQCHART_H
 
 #include <QChartView>
 #include <QCandlestickSet>
@@ -175,4 +175,4 @@ private:
     QtCharts::QHCandlestickModelMapper *mapper_;
 };
 
-#endif // EXCHART_H
+#endif // EXQCHART_H

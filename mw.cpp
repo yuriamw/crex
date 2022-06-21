@@ -29,7 +29,7 @@
 #include "exchangeprotocol.h"
 #include "mdichild.h"
 
-#include "widgets/exchartview.h"
+#include "widgets/exchart.h"
 
 MW::MW(ExchangeProtocol *exprot, ExchangeInfo *exinfo, QWidget *parent)
     : QMainWindow(parent)
@@ -126,10 +126,9 @@ void MW::createChartWindow(const QString symbol)
     mdiArea->addSubWindow(chart);
     chart->show();
 
-    crex::ch::ExChartView *cv = new crex::ch::ExChartView(std::move(symbol));
-    mdiArea->addSubWindow(cv);
-    cv->show();
-
+    crex::chart::ExChart *ec = new crex::chart::ExChart(0);
+    ec->resize(640, 480);
+    ec->show();
 }
 
 void MW::startExchangeClock()
