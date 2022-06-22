@@ -6,22 +6,35 @@
 #include <QSharedPointer>
 #include <QVector>
 #include <QString>
+#include <QByteArray>
 #include <QResizeEvent>
 #include <QMouseEvent>
 #include <QToolButton>
 #include <QLabel>
+#include <QJsonArray>
+
+#include "exchangeprotocol.h"
+#include "exchange/exchangerequest.h"
 
 namespace crex::chart {
 
 class ExChart : public QCustomPlot
 {
-public:
-    ExChart(QWidget *parent = nullptr);
+    Q_OBJECT
 
+public:
+    ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
+
+    void setSymbol(QString symbol);
     void setCandles(QSharedPointer<QCPFinancialDataContainer> cont);
 
 public slots:
     void switchTF();
+    void scaleData(qreal tmin, qreal tmax, qreal dmin, qreal dmax);
+
+private slots:
+    void onTimer();
+    void onCandleDataReady();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -32,6 +45,10 @@ private:
     void placeTimeFrameButton();
     void placeOlhcLabel(const QString &s = QString());
 
+    void parseJSON(QByteArray &json_data);
+    QCPFinancialData parseJSONCandle(const QJsonArray &json);
+
+
 private:
     QCPItemLine *hCursorLine;
     QCPItemLine *vCursorLine;
@@ -39,6 +56,9 @@ private:
 
     QCPFinancial *financial;
 
+    QString symbol_;
+    ExchangeRequest *request_;
+    ExchangeProtocol *protocol_;
     QString timeFrame;
     QToolButton *tfButton;
     QLabel *olhcDisplay;

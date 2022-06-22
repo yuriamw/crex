@@ -126,8 +126,9 @@ void MW::createChartWindow(const QString symbol)
     mdiArea->addSubWindow(chart);
     chart->show();
 
-    crex::chart::ExChart *ec = new crex::chart::ExChart(0);
-    ec->resize(640, 480);
+    crex::chart::ExChart *ec = new crex::chart::ExChart(exchange_protocol_, std::move(symbol));
+//    ec->resize(640, 480);
+    mdiArea->addSubWindow(ec);
     ec->show();
 }
 
@@ -169,8 +170,12 @@ crex::mdichild::MdiType MW::mdiChildType(QWidget *widget) const
 {
     ExOrderBook *book = qobject_cast<ExOrderBook *>(widget);
     ExQChart *chart = qobject_cast<ExQChart *>(widget);
+    crex::chart::ExChart *ec = qobject_cast<crex::chart::ExChart *>(widget);
     crex::mdichild::MdiType mt = crex::mdichild::MdiInvalid;
+
     if (chart)
+        mt = crex::mdichild::MdiChart;
+    if (ec)
         mt = crex::mdichild::MdiChart;
     if (book)
         mt = crex::mdichild::MdiDOM;
