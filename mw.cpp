@@ -233,8 +233,8 @@ void MW::onTvItemActivated(const QModelIndex &index)
     const QString symbol = tvMarket->model()->data(index).toString();
     TRACE("") << symbol;
 
-//    createChartWindow(symbol);
-    createOrderBookWindow(symbol);
+    createChartWindow(symbol);
+//    createOrderBookWindow(symbol);
 }
 
 void MW::onUpdateWindowMenu()

@@ -20,6 +20,8 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
     QCustomPlot(parent)
   , hCursorLine(new QCPItemLine(this))
   , vCursorLine(new QCPItemLine(this))
+  , dataInitialized(false)
+  , autoScaleY(true)
   , request_(nullptr)
   , protocol_(protocol)
   , timeFrame("1H")
@@ -46,7 +48,10 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
     financial = new QCPFinancial(xAxis, yAxis2);
     financial->setChartStyle(QCPFinancial::csCandlestick);
     financial->setWidthType(QCPFinancial::wtAbsolute);
+//    financial->setWidthType(QCPFinancial::wtAxisRectRatio);
+//    financial->setWidthType(QCPFinancial::wtPlotCoords);
     financial->setWidth(5);
+    xAxis->setRange(0, 0);
 
     QSharedPointer<QCPAxisTickerDateTime> xTicker = QSharedPointer<QCPAxisTickerDateTime>(new QCPAxisTickerDateTime);
     xAxis->setTicker(xTicker);
@@ -112,7 +117,7 @@ void ExChart::mouseMoveEvent(QMouseEvent *event)
 
     const auto d = financial->data()->findBegin(xAxis->pixelToCoord(event->x()), true);
     QString olhc(QString("%1 O:%2 H:%3 L:%4 C:%5")
-                 .arg(QDateTime::fromMSecsSinceEpoch(d->key * 1000).toString("yyyy-MM-dd hh:mm"))
+                 .arg(QDateTime::fromMSecsSinceEpoch(d->key).toString("yyyy-MM-dd hh:mm"))
                  .arg(d->open)
                  .arg(d->high)
                  .arg(d->low)
@@ -186,20 +191,54 @@ void ExChart::switchTF()
     placeTimeFrameButton();
 }
 
+int ExChart::visibleCandlesCount()
+{
+    const int N = axisRect(0)->size().width() / (financial->width() + 2) - 1;
+    return N;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::scaleData
 ///
-void ExChart::scaleData(qreal tmin, qreal tmax, qreal dmin, qreal dmax)
+void ExChart::scaleData()
 {
-    qreal r = dmax - dmin;
-    dmin -= r / 10;
-    dmax += r / 10;
+    scaleDataX();
+    scaleDataY();
+}
 
-    r = tmax - tmin;
-    tmin -= r / 10;
-    tmax += r / 10;
+void ExChart::scaleDataX()
+{
+    if (dataInitialized)
+        return;
+
+    const int N = visibleCandlesCount();
+
+    auto it = financial->data()->end();
+    it--;
+    auto tmax = it->key;
+    it -= N;
+    auto tmin = it->key;
 
     xAxis->setRange(tmin, tmax);
+}
+
+void ExChart::scaleDataY()
+{
+    if (!autoScaleY)
+        return;
+
+    const int N = visibleCandlesCount();
+    auto end = financial->data()->findBegin(xAxis->pixelToCoord(axisRect(0)->bottomRight().x()), true);
+    auto begin = financial->data()->findBegin(xAxis->pixelToCoord(axisRect(0)->topLeft().x()), true);
+
+    auto itmin = std::min_element(begin, end, [](const auto &a, const auto &b) { return a.low < b.low; });
+    auto itmax = std::max_element(begin, end, [](const auto &a, const auto &b) { return a.high < b.high; });
+
+    auto dmin = itmin->low;
+    auto dmax = itmax->high;
+    auto r = dmax - dmin;
+    dmin -= r / 10;
+    dmax += r / 10;
 
     yAxis->setRange(dmin, dmax);
 }
@@ -228,6 +267,7 @@ void ExChart::onCandleDataReady()
         request_ = nullptr;
 
         parseJSON(json_data);
+        dataInitialized = true;
     }
 
     QTimer::singleShot(550, this, &ExChart::onTimer);
@@ -261,10 +301,6 @@ void ExChart::parseJSON(QByteArray &json_data)
     QSharedPointer<QCPFinancialDataContainer> cont;
     cont = QSharedPointer<QCPFinancialDataContainer>(new QCPFinancialDataContainer);
 
-    qreal dmin = std::numeric_limits<qreal>::max();
-    qreal dmax = -1.0;
-    qreal tmin = std::numeric_limits<qreal>::max();
-    qreal tmax = -1.0;
     for (int i = 0; i < doc.array().count(); i++)
     {
         if (!doc[i].isArray())
@@ -274,23 +310,18 @@ void ExChart::parseJSON(QByteArray &json_data)
         }
         QCPFinancialData fd = parseJSONCandle(doc[i].toArray());
         cont->add(std::move(fd));
-
-        if (fd.low < dmin) dmin = fd.low;
-        if (fd.high > dmax) dmax = fd.high;
-
-        if (fd.key < tmin) tmin = fd.key;
-        if (fd.key > tmax) tmax = fd.key;
     }
 
     setCandles(cont);
+    replot();
 
-    scaleData(tmin, tmax, dmin, dmax);
+    scaleData();
 }
 
 QCPFinancialData ExChart::parseJSONCandle(const QJsonArray &arr)
 {
     //    TRACE("") << json[i];
-    QCPFinancialData fd(arr[0].toDouble() / 1000.0,
+    QCPFinancialData fd(arr[0].toDouble(),
                         arr[1].toString().toDouble(),
                         arr[2].toString().toDouble(),
                         arr[3].toString().toDouble(),

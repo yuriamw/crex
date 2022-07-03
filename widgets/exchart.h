@@ -30,7 +30,9 @@ public:
 
 public slots:
     void switchTF();
-    void scaleData(qreal tmin, qreal tmax, qreal dmin, qreal dmax);
+    void scaleData();
+    void scaleDataX();
+    void scaleDataY();
 
 private slots:
     void onTimer();
@@ -48,6 +50,8 @@ private:
     void parseJSON(QByteArray &json_data);
     QCPFinancialData parseJSONCandle(const QJsonArray &json);
 
+    int visibleCandlesCount();
+
 
 private:
     QCPItemLine *hCursorLine;
@@ -57,6 +61,8 @@ private:
     QCPFinancial *financial;
 
     QString symbol_;
+    bool dataInitialized;
+    bool autoScaleY;
     ExchangeRequest *request_;
     ExchangeProtocol *protocol_;
     QString timeFrame;
