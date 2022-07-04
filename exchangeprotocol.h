@@ -24,7 +24,7 @@ public:
     const QByteArray & data() const;
 
     ExchangeRequest *requestExchangeInfo();
-    ExchangeRequest *requestExchangeCandledata(const QString &symbol, const QString &timeFrame);
+    ExchangeRequest *requestExchangeCandledata(const QString &symbol, const QString &timeFrame, const qlonglong startTime = 0);
     ExchangeRequest *requestExchangeDepthOfMarket(const QString & symbol, const int limit = 500);
     void httpFinished();
     void httpReadyRead();

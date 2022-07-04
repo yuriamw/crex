@@ -77,7 +77,19 @@ void ExChart::setSymbol(QString symbol)
 
 void ExChart::setCandles(QSharedPointer<QCPFinancialDataContainer> cont)
 {
-    financial->setData(cont);
+    auto rmStart = cont->begin()->key;
+    auto it = financial->data()->end();
+    it--;
+    auto rmEnd = it->key;
+    if (rmStart < rmEnd)
+    {
+        financial->data()->removeAfter(rmStart);
+    }
+    else if (rmStart == rmEnd)
+    {
+        financial->data()->remove(rmStart);
+    }
+    financial->data()->add(*cont);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -254,7 +266,14 @@ void ExChart::onTimer()
     if (symbol_.isEmpty())
         TRACE("empty");
 
-    request_ = protocol_->requestExchangeCandledata(symbol_, "1h");
+    qlonglong startTime = 0;
+    if (financial->data()->size() > 0)
+    {
+        auto it = financial->data()->end();
+        it--;
+        startTime = it->key;
+    }
+    request_ = protocol_->requestExchangeCandledata(symbol_, "1m", startTime);
     connect(request_, &ExchangeRequest::dataReady, this, &ExChart::onCandleDataReady);
 }
 
@@ -320,7 +339,6 @@ void ExChart::parseJSON(QByteArray &json_data)
 
 QCPFinancialData ExChart::parseJSONCandle(const QJsonArray &arr)
 {
-    //    TRACE("") << json[i];
     QCPFinancialData fd(arr[0].toDouble(),
                         arr[1].toString().toDouble(),
                         arr[2].toString().toDouble(),

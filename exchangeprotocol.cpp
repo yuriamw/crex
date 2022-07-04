@@ -52,21 +52,26 @@ ExchangeRequest *ExchangeProtocol::requestExchangeInfo()
 //    connect(reply, &QIODevice::readyRead, this, &ExchangeProtocol::httpReadyRead);
 }
 
-ExchangeRequest *ExchangeProtocol::requestExchangeCandledata(const QString &symbol, const QString &timeFrame)
+ExchangeRequest *ExchangeProtocol::requestExchangeCandledata(const QString &symbol, const QString &timeFrame, const qlonglong startTime)
 {
     ExchangeRequest *rq = new ExchangeRequest(this);
 
-//    klines?symbol=BTCUSDT&interval=1h
-    QNetworkReply *reply = nam_.get(QNetworkRequest(QUrl(QString("%1/%2/%3?symbol=%4&interval=%5")
-                                         .arg(baseUrl())
-                                         .arg(path())
-                                         .arg("klines")
-                                         .arg(symbol)
-                                         .arg(timeFrame)
-                                    )));
+//    klines?symbol=BTCUSDT&interval=1h&startTime=12345678901234
+    QString req("%1/%2/%3?symbol=%4&interval=%5");
+    if (startTime > 0)
+    {
+        req += QString("&startTime=%1").arg(startTime);
+    }
+    QUrl url(req.arg(baseUrl())
+             .arg(path())
+             .arg("klines")
+             .arg(symbol)
+             .arg(timeFrame)
+            );
+
+    QNetworkReply *reply = nam_.get(QNetworkRequest(url));
     rq->setReply(reply);
 
-//    requests_.append(rq);
     return rq;
 }
 
