@@ -121,13 +121,11 @@ void MW::createChartWindow(const QString symbol)
     if (hasMdiChild(crex::mdichild::MdiChart, symbol))
         return;
 
-    ExQChart *chart = new ExQChart(exchange_protocol_, std::move(symbol));
-
-    mdiArea->addSubWindow(chart);
-    chart->show();
+//    ExQChart *chart = new ExQChart(exchange_protocol_, std::move(symbol));
+//    mdiArea->addSubWindow(chart);
+//    chart->show();
 
     crex::chart::ExChart *ec = new crex::chart::ExChart(exchange_protocol_, std::move(symbol));
-//    ec->resize(640, 480);
     mdiArea->addSubWindow(ec);
     ec->show();
 }
