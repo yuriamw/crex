@@ -7,10 +7,33 @@
 #include <QIcon>
 #include <QTimer>
 #include <QByteArray>
+#include <QList>
+#include <QStringList>
+#include <QString>
 
 #include "logger.h"
 
 namespace crex::chart {
+
+namespace {
+    QStringList TimeFrames = {
+        "1m",
+        "3m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "4h",
+        "6h",
+        "8h",
+        "12h",
+        "1d",
+        "3d",
+        "1w",
+        "1M"
+    };
+}
 
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::ExChart
@@ -24,8 +47,8 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
   , autoScaleY(true)
   , request_(nullptr)
   , protocol_(protocol)
-  , timeFrame("1H")
-  , tfButton(new QToolButton(this))
+  , timeFrame(TimeFrames[0])
+  , tfCombo(new QComboBox(this))
   , olhcDisplay(new QLabel("OLHC", this))
 {
     setWindowIcon(QIcon::fromTheme("graphics"));
@@ -144,30 +167,13 @@ void ExChart::mouseMoveEvent(QMouseEvent *event)
 ///
 void ExChart::createTimeFrameButton()
 {
-    tfButton->move(4, 4);
+    tfCombo->setFocusPolicy(Qt::NoFocus);
+    tfCombo->move(4, 4);
+    tfCombo->addItems(TimeFrames);
+    connect(tfCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, QOverload<int>::of(&ExChart::switchTF));
 
-    placeTimeFrameButton();
-
-    connect(tfButton, &QToolButton::clicked, this, &ExChart::switchTF);
-}
-
-/////////////////////////////////////////////////////////////////////////////
-/// \brief ExChart::placeTimeFrameButton
-///
-void ExChart::placeTimeFrameButton()
-{
-    tfButton->setText(timeFrame);
-
-    QFontMetrics fm(tfButton->font());
-    int w = fm.width(timeFrame);
-    int h = fm.height();
-    QSize sz(w, h);
-    sz += QSize(4, 2);
-
-    tfButton->resize(sz);
-    tfButton->setFocusPolicy(Qt::NoFocus);
-
-    olhcDisplay->move(tfButton->pos().x() + tfButton->size().width() + 4, 4);
+    olhcDisplay->move(tfCombo->pos().x() + tfCombo->size().width() + 4, 4);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -187,20 +193,10 @@ void ExChart::placeOlhcLabel(const QString &s)
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::switchTF
 ///
-void ExChart::switchTF()
+void ExChart::switchTF(int index)
 {
-    static QString timeFrames[] = { "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M", QString()};
-
-    for (int i = 0; !timeFrames[i].isNull(); i++)
-    {
-        if (timeFrames[i] == timeFrame)
-        {
-            i++; if (timeFrames[i] == "") i = 0;
-            timeFrame = timeFrames[i];
-            break;
-        }
-    }
-    placeTimeFrameButton();
+    timeFrame = TimeFrames.at(index);
+    financial->data()->clear();
 }
 
 int ExChart::visibleCandlesCount()
@@ -273,7 +269,7 @@ void ExChart::onTimer()
         it--;
         startTime = it->key;
     }
-    request_ = protocol_->requestExchangeCandledata(symbol_, "1m", startTime);
+    request_ = protocol_->requestExchangeCandledata(symbol_, timeFrame, startTime);
     connect(request_, &ExchangeRequest::dataReady, this, &ExChart::onCandleDataReady);
 }
 

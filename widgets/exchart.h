@@ -9,7 +9,7 @@
 #include <QByteArray>
 #include <QResizeEvent>
 #include <QMouseEvent>
-#include <QToolButton>
+#include <QComboBox>
 #include <QLabel>
 #include <QJsonArray>
 
@@ -29,7 +29,7 @@ public:
     void setCandles(QSharedPointer<QCPFinancialDataContainer> cont);
 
 public slots:
-    void switchTF();
+    void switchTF(int index);
     void scaleData();
     void scaleDataX();
     void scaleDataY();
@@ -44,7 +44,6 @@ protected:
 
 private:
     void createTimeFrameButton();
-    void placeTimeFrameButton();
     void placeOlhcLabel(const QString &s = QString());
 
     void parseJSON(QByteArray &json_data);
@@ -66,7 +65,7 @@ private:
     ExchangeRequest *request_;
     ExchangeProtocol *protocol_;
     QString timeFrame;
-    QToolButton *tfButton;
+    QComboBox *tfCombo;
     QLabel *olhcDisplay;
 };
 
