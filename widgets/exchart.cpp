@@ -39,14 +39,16 @@ namespace {
 /// \brief ExChart::ExChart
 /// \param parent
 ///
-ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent):
+ExChart::ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const QString symbol, QWidget *parent):
     QCustomPlot(parent)
   , hCursorLine(new QCPItemLine(this))
   , vCursorLine(new QCPItemLine(this))
   , dataInitialized(false)
   , autoScaleY(true)
   , request_(nullptr)
+  , wss_request_(nullptr)
   , protocol_(protocol)
+  , wss_protocol_(wss_protocol)
   , timeFrame(TimeFrames[0])
   , tfCombo(new QComboBox(this))
   , olhcDisplay(new QLabel("OLHC", this))
@@ -85,6 +87,8 @@ ExChart::ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *pare
     createTimeFrameButton();
 
     QTimer::singleShot(100, this, &ExChart::onTimer);
+
+    wss_request_ = wss_protocol_->requestExchangeCandledata(symbol_, timeFrame);
 }
 
 void ExChart::setSymbol(QString symbol)

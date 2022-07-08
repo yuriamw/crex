@@ -1,4 +1,4 @@
-QT       += core gui network charts
+QT       += core gui network charts websockets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -33,6 +33,8 @@ SOURCES += \
     data/data.cpp \
     data/datasim.cpp \
     exchange/exchangerequest.cpp \
+    exchange/exwssprotocol.cpp \
+    exchange/exwssrequest.cpp \
     exchangeinfo.cpp \
     exchangeprotocol.cpp \
     exorderbook.cpp \
@@ -49,6 +51,8 @@ HEADERS += \
     data/data.h \
     data/datasim.h \
     exchange/exchangerequest.h \
+    exchange/exwssprotocol.h \
+    exchange/exwssrequest.h \
     exchangeinfo.h \
     exchangeprotocol.h \
     exorderbook.h \

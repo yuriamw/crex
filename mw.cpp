@@ -31,10 +31,11 @@
 
 #include "widgets/exchart.h"
 
-MW::MW(ExchangeProtocol *exprot, ExchangeInfo *exinfo, QWidget *parent)
+MW::MW(ExchangeProtocol *exprot, ExWssProtocol *wssprot, ExchangeInfo *exinfo, QWidget *parent)
     : QMainWindow(parent)
     , exchange_info_(exinfo)
     , exchange_protocol_(exprot)
+    , exchange_wss_protocol_(wssprot)
     , mdiArea(new QMdiArea(this))
 {
     setCentralWidget(mdiArea);
@@ -125,7 +126,7 @@ void MW::createChartWindow(const QString symbol)
 //    mdiArea->addSubWindow(chart);
 //    chart->show();
 
-    crex::chart::ExChart *ec = new crex::chart::ExChart(exchange_protocol_, std::move(symbol));
+    crex::chart::ExChart *ec = new crex::chart::ExChart(exchange_protocol_, exchange_wss_protocol_, std::move(symbol));
     mdiArea->addSubWindow(ec);
     ec->show();
 }

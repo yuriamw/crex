@@ -15,6 +15,8 @@
 
 #include "exchangeprotocol.h"
 #include "exchange/exchangerequest.h"
+#include "exchange/exwssprotocol.h"
+#include "exchange/exwssrequest.h"
 
 namespace crex::chart {
 
@@ -23,7 +25,7 @@ class ExChart : public QCustomPlot
     Q_OBJECT
 
 public:
-    ExChart(ExchangeProtocol *protocol, const QString symbol, QWidget *parent = nullptr);
+    ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const QString symbol, QWidget *parent = nullptr);
 
     void setSymbol(QString symbol);
     void setCandles(QSharedPointer<QCPFinancialDataContainer> cont);
@@ -63,7 +65,9 @@ private:
     bool dataInitialized;
     bool autoScaleY;
     ExchangeRequest *request_;
+    ExWssRequest *wss_request_;
     ExchangeProtocol *protocol_;
+    ExWssProtocol *wss_protocol_;
     QString timeFrame;
     QComboBox *tfCombo;
     QLabel *olhcDisplay;

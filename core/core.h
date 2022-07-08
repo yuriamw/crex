@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#include "exchange/exchangerequest.h"
+#include "exchange/exwssprotocol.h"
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
 
@@ -15,6 +15,7 @@ public:
 
     ExchangeInfo *exchangeInfo();
     ExchangeProtocol *exchangeProtocol();
+    ExWssProtocol *exchangeWssProtocol();
 
 private slots:
     void onExchangeProtocolError();
@@ -23,6 +24,7 @@ signals:
 
 private:
     ExchangeProtocol *exchange_protocol_;
+    ExWssProtocol *exchange_wss_protocol_;
     ExchangeInfo *exchange_info_;
 
     ExchangeRequest *exchange_info_request_;

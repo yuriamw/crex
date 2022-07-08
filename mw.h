@@ -14,6 +14,7 @@
 
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
+#include "exchange/exwssprotocol.h"
 #include "exorderbook.h"
 #include "exqchart.h"
 #include "mdichild.h"
@@ -23,7 +24,7 @@ class MW : public QMainWindow
     Q_OBJECT
 
 public:
-    MW(ExchangeProtocol *exprot, ExchangeInfo *exinfo, QWidget *parent = nullptr);
+    MW(ExchangeProtocol *exprot, ExWssProtocol *wssprot, ExchangeInfo *exinfo, QWidget *parent = nullptr);
     ~MW();
 
 private:
@@ -58,6 +59,7 @@ private:
 
     ExchangeInfo *exchange_info_;
     ExchangeProtocol *exchange_protocol_;
+    ExWssProtocol *exchange_wss_protocol_;
 
     QMdiArea *mdiArea;
     QMenu *windowMenu;
