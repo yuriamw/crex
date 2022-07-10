@@ -30,6 +30,16 @@ bool Symbol::read(const QJsonObject &json)
         TRACE("") << "Parse error: no 'symbol'";
         return false;
     }
+    if (!json.contains("pair"))
+    {
+        TRACE("") << "Parse error: no 'pair'";
+        return false;
+    }
+    if (!json.contains("contractType"))
+    {
+        TRACE("") << "Parse error: no 'contractType'";
+        return false;
+    }
     if (!json.contains("baseAsset"))
     {
         TRACE("") << "Parse error: no 'baseAsset'";
@@ -56,6 +66,8 @@ bool Symbol::read(const QJsonObject &json)
         return false;
     }
     symbol = json["symbol"].toString();
+    pair = json["pair"].toString();
+    contractType = json["contractType"].toString();
     baseAsset = json["baseAsset"].toString();
     quoteAsset = json["quoteAsset"].toString();
     baseAssetPrecision = json["baseAssetPrecision"].toInt();

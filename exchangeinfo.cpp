@@ -170,10 +170,14 @@ bool ExchangeInfo::parseJSON(const QJsonObject &json)
             {
                 return false;
             }
+            if (symbol.contractType != "PERPETUAL")
+                continue;
+
             symbols.append(symbol);
             model_->insertSymbol(symbol);
         }
     }
+
     return true;
 }
 

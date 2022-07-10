@@ -14,6 +14,8 @@ public:
 
 public:
     QString symbol;
+    QString pair;
+    QString contractType;
     QString baseAsset;
     QString quoteAsset;
     int baseAssetPrecision;
