@@ -49,13 +49,25 @@ void ExWssProtocol::onConnected()
 
 void ExWssProtocol::onTextMessageReceived(QString message)
 {
-    static int i = 0;
+    static int i = -1;
+    static QStringList list;
 
     QJsonDocument doc = QJsonDocument::fromJson(message.toLatin1());
-    crex::data::dumpToFile(QString("wss-%1").arg(i), doc);
+//    crex::data::dumpToFile(QString("../wss/wss-%1.json").arg(++i, 8, 10, QChar('0')), doc);
 
-    TRACE("Message received:") << i++;
+    QString type = "UNKNOWN";
+    QJsonObject obj = doc.object();
+    if (obj.contains("id"))
+        type = QString("ID: %1").arg(obj["id"].toInt());
+    if (obj.contains("e"))
+        type = QString("e: %1").arg(obj["e"].toString());
 
+    if (list.indexOf(QRegExp(QString("^[0-9].*: %1").arg(type))) < 0)
+    {
+        QString t = QString("%1: %2").arg(i).arg(type);
+        list.append(t);
+        TRACE("t:") << t;
+    }
 }
 
 void ExWssProtocol::wssDisconnected()
@@ -87,9 +99,6 @@ ExWssRequest *ExWssProtocol::requestExchangeCandledata(const QString &symbol, co
     Q_UNUSED(timeFrame);
     Q_UNUSED(startTime);
 
-    TRACE("BANNED");
-    return;
-
     web_socket_.open(QUrl(base_));
 
     auto sym = symbol.toLower();
@@ -109,11 +118,11 @@ ExWssRequest *ExWssProtocol::requestExchangeCandledata(const QString &symbol, co
             QJsonArray array = {
 //                QString("%1@ticker").arg(sym),
 //                QString("%1@depth").arg(sym),
-                QString("%1@kline_%2").arg(sym).arg(tf),
+//                QString("%1@kline_%2").arg(sym).arg(tf),
                 QString("%1_%2@continuousKline_%3").arg(sym).arg("perpetual").arg(tf)
             };
             json["params"] = array;
-            json["id"]     = 378;
+            json["id"]     = 1;
 
             TRACE("Subscription:") << json;
 
