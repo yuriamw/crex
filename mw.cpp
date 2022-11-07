@@ -29,7 +29,8 @@
 #include "exchangeprotocol.h"
 #include "mdichild.h"
 
-#include "widgets/exchart.h"
+#include "widgets/exqcpchart.h"
+#include "widgets/exqwttchart.h"
 
 MW::MW(ExchangeProtocol *exprot, Core *core, ExchangeInfo *exinfo, QWidget *parent)
     : QMainWindow(parent)
@@ -126,9 +127,14 @@ void MW::createChartWindow(const QString symbol)
 //    mdiArea->addSubWindow(chart);
 //    chart->show();
 
-    crex::chart::ExChart *ec = new crex::chart::ExChart(exchange_protocol_, core_, std::move(symbol));
+    crex::chart::ExQcpChart *ec = new crex::chart::ExQcpChart(exchange_protocol_, core_, /*std::move(*/symbol/*)*/);
+
     mdiArea->addSubWindow(ec);
     ec->show();
+
+    crex::chart::ExQwtTChart *qc = new crex::chart::ExQwtTChart(exchange_protocol_, core_, std::move(symbol));
+    mdiArea->addSubWindow(qc);
+    qc->show();
 }
 
 void MW::startExchangeClock()
@@ -169,7 +175,7 @@ crex::mdichild::MdiType MW::mdiChildType(QWidget *widget) const
 {
     ExOrderBook *book = qobject_cast<ExOrderBook *>(widget);
     ExQChart *chart = qobject_cast<ExQChart *>(widget);
-    crex::chart::ExChart *ec = qobject_cast<crex::chart::ExChart *>(widget);
+    crex::chart::ExQcpChart *ec = qobject_cast<crex::chart::ExQcpChart *>(widget);
     crex::mdichild::MdiType mt = crex::mdichild::MdiInvalid;
 
     if (chart)

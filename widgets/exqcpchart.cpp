@@ -1,4 +1,4 @@
-#include "widgets/exchart.h"
+#include "widgets/exqcpchart.h"
 
 #include <qcustomplot.h>
 
@@ -42,7 +42,7 @@ namespace {
 /// \brief ExChart::ExChart
 /// \param parent
 ///
-ExChart::ExChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent):
+ExQcpChart::ExQcpChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent):
     QCustomPlot(parent)
   , hCursorLine(new QCPItemLine(this))
   , vCursorLine(new QCPItemLine(this))
@@ -59,7 +59,7 @@ ExChart::ExChart(ExchangeProtocol *protocol, Core *core, const QString symbol, Q
 {
     setWindowIcon(QIcon::fromTheme("graphics"));
     setSymbol(std::move(symbol));
-    setMinimumSize(640, 480);
+    setMinimumSize(320, 240);
 
     yAxis->setVisible(false);
     yAxis2->setVisible(true);
@@ -91,13 +91,13 @@ ExChart::ExChart(ExchangeProtocol *protocol, Core *core, const QString symbol, Q
     createTimeFrameButton();
 
     candleTimer->setSingleShot(true);
-    connect(candleTimer, &QTimer::timeout, this, &ExChart::onTimer);
+    connect(candleTimer, &QTimer::timeout, this, &ExQcpChart::onTimer);
     candleTimer->start(100);
 
-    connect(wss_protocol_, &ExWssProtocol::dataReady, this, &ExChart::onWssDataReady);
+    connect(wss_protocol_, &ExWssProtocol::dataReady, this, &ExQcpChart::onWssDataReady);
 }
 
-void ExChart::setSymbol(QString symbol)
+void ExQcpChart::setSymbol(QString symbol)
 {
     symbol_.clear();
     symbol_ = std::move(symbol);
@@ -108,7 +108,7 @@ void ExChart::setSymbol(QString symbol)
         setWindowTitle(symbol_);
 }
 
-void ExChart::setCandles(QSharedPointer<QCPFinancialDataContainer> cont)
+void ExQcpChart::setCandles(QSharedPointer<QCPFinancialDataContainer> cont)
 {
     auto rmStart = cont->begin()->key;
     auto it = financial->data()->end();
@@ -129,7 +129,7 @@ void ExChart::setCandles(QSharedPointer<QCPFinancialDataContainer> cont)
 /// \brief ExChart::resizeEvent
 /// \param event
 ///
-void ExChart::resizeEvent(QResizeEvent *event)
+void ExQcpChart::resizeEvent(QResizeEvent *event)
 {
     QCustomPlot::resizeEvent(event);
 
@@ -143,7 +143,7 @@ void ExChart::resizeEvent(QResizeEvent *event)
 /// \brief ExChart::mouseMoveEvent
 /// \param event
 ///
-void ExChart::mouseMoveEvent(QMouseEvent *event)
+void ExQcpChart::mouseMoveEvent(QMouseEvent *event)
 {
     QCustomPlot::mouseMoveEvent(event);
 
@@ -176,7 +176,7 @@ void ExChart::mouseMoveEvent(QMouseEvent *event)
 //    placeOlhcLabel(olhc);
 }
 
-void ExChart::updateOlhcLabelValue(const QCPFinancialData &d)
+void ExQcpChart::updateOlhcLabelValue(const QCPFinancialData &d)
 {
     QString olhc(QString("%1 O:%2 H:%3 L:%4 C:%5")
                  .arg(QDateTime::fromMSecsSinceEpoch(d.key).toString("yyyy-MM-dd hh:mm"))
@@ -192,13 +192,13 @@ void ExChart::updateOlhcLabelValue(const QCPFinancialData &d)
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::createTimeFrameButton
 ///
-void ExChart::createTimeFrameButton()
+void ExQcpChart::createTimeFrameButton()
 {
     tfCombo->setFocusPolicy(Qt::NoFocus);
     tfCombo->move(4, 4);
     tfCombo->addItems(TimeFrames);
     connect(tfCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, QOverload<int>::of(&ExChart::switchTF));
+            this, QOverload<int>::of(&ExQcpChart::switchTF));
 
     olhcDisplay->move(tfCombo->pos().x() + tfCombo->size().width() + 4, 4);
 }
@@ -206,7 +206,7 @@ void ExChart::createTimeFrameButton()
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::placeOlhcLabel
 ///
-void ExChart::placeOlhcLabel(const QString &s)
+void ExQcpChart::placeOlhcLabel(const QString &s)
 {
     olhcDisplay->setText(s);
     QFontMetrics fm(olhcDisplay->font());
@@ -220,7 +220,7 @@ void ExChart::placeOlhcLabel(const QString &s)
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::switchTF
 ///
-void ExChart::switchTF(int index)
+void ExQcpChart::switchTF(int index)
 {
     candleTimer->stop();
     wss_protocol_->unsubscribe();
@@ -234,7 +234,7 @@ void ExChart::switchTF(int index)
     candleTimer->start(100);
 }
 
-int ExChart::visibleCandlesCount()
+int ExQcpChart::visibleCandlesCount()
 {
     const int N = axisRect(0)->size().width() / (financial->width() + 2) - 1;
     return N;
@@ -243,13 +243,13 @@ int ExChart::visibleCandlesCount()
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::scaleData
 ///
-void ExChart::scaleData()
+void ExQcpChart::scaleData()
 {
     scaleDataX();
     scaleDataY();
 }
 
-void ExChart::scaleDataX()
+void ExQcpChart::scaleDataX()
 {
     if (dataInitialized)
         return;
@@ -265,7 +265,7 @@ void ExChart::scaleDataX()
     xAxis->setRange(tmin, tmax);
 }
 
-void ExChart::scaleDataY()
+void ExQcpChart::scaleDataY()
 {
     if (!autoScaleY)
         return;
@@ -289,7 +289,7 @@ void ExChart::scaleDataY()
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::onTimer
 ///
-void ExChart::onTimer()
+void ExQcpChart::onTimer()
 {
     if (request_)
         return;
@@ -305,10 +305,10 @@ void ExChart::onTimer()
         startTime = it->key;
     }
     request_ = protocol_->requestExchangeCandledata(symbol_, timeFrame, startTime);
-    connect(request_, &ExchangeRequest::dataReady, this, &ExChart::onCandleDataReady);
+    connect(request_, &ExchangeRequest::dataReady, this, &ExQcpChart::onCandleDataReady);
 }
 
-void ExChart::onCandleDataReady()
+void ExQcpChart::onCandleDataReady()
 {
     if (request_)
     {
@@ -333,7 +333,7 @@ void ExChart::onCandleDataReady()
 ///
 /// JSON Parser
 
-void ExChart::parseJSON(QByteArray &json_data)
+void ExQcpChart::parseJSON(QByteArray &json_data)
 {
     QJsonParseError jsonError;
     QJsonDocument doc = QJsonDocument::fromJson(json_data, &jsonError);
@@ -372,7 +372,7 @@ void ExChart::parseJSON(QByteArray &json_data)
     scaleData();
 }
 
-QCPFinancialData ExChart::parseJSONCandle(const QJsonArray &arr)
+QCPFinancialData ExQcpChart::parseJSONCandle(const QJsonArray &arr)
 {
     const auto t = 0;
     const auto o = 1;
@@ -389,13 +389,13 @@ QCPFinancialData ExChart::parseJSONCandle(const QJsonArray &arr)
     return fd;
 }
 
-void ExChart::onWssDataReady()
+void ExQcpChart::onWssDataReady()
 {
     QJsonObject data(wss_protocol_->popData());
     parseWssJSON(data);
 }
 
-void ExChart::parseWssJSON(QJsonObject &data)
+void ExQcpChart::parseWssJSON(QJsonObject &data)
 {
     if (data.isEmpty())
     {

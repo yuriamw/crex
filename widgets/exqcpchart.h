@@ -1,5 +1,5 @@
-#ifndef EXCHART_H
-#define EXCHART_H
+#ifndef EXQCPCHART_H
+#define EXQCPCHART_H
 
 #include <qcustomplot.h>
 
@@ -23,12 +23,12 @@
 
 namespace crex::chart {
 
-class ExChart : public QCustomPlot
+class ExQcpChart : public QCustomPlot
 {
     Q_OBJECT
 
 public:
-    ExChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent = nullptr);
+    ExQcpChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent = nullptr);
 
     void setSymbol(QString symbol);
     void setCandles(QSharedPointer<QCPFinancialDataContainer> cont);
@@ -82,4 +82,4 @@ private:
 
 } // namespace crex::chart
 
-#endif // EXCHART_H
+#endif // EXQCPCHART_H

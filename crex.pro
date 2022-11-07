@@ -23,6 +23,12 @@ CONFIG(debug, release|debug) {
 }
 LIBS += -L/usr/local/lib/ -l$$QCPLIB
 
+# Qwt library
+INCLUDEPATH += /usr/local/qwt-6.2.0-dev/include
+LIBS += -L/usr/local/qwt-6.2.0-dev/lib -lqwt
+#QWT_ROOT = /usr/local/qwt-6.2.0-dev
+#include( $${QWT_ROOT}/features/qwtconfig.pri )
+
 # You can also make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
@@ -44,7 +50,8 @@ SOURCES += \
     symbol.cpp \
     symbolitem.cpp \
     symbolmodel.cpp \
-    widgets/exchart.cpp
+    widgets/exqcpchart.cpp \
+    widgets/exqwttchart.cpp
 
 HEADERS += \
     core/core.h \
@@ -63,7 +70,8 @@ HEADERS += \
     symbol.h \
     symbolitem.h \
     symbolmodel.h \
-    widgets/exchart.h
+    widgets/exqcpchart.h \
+    widgets/exqwttchart.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
