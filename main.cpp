@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     Core core;
 
-    MW mw(core.exchangeProtocol(), core.exchangeWssProtocol(), core.exchangeInfo());
+    MW mw(core.exchangeProtocol(), &core, core.exchangeInfo());
     mw.show();
 
     return a.exec();

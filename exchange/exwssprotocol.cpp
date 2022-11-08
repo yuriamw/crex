@@ -9,11 +9,12 @@
 
 ExWssProtocol::ExWssProtocol(const QString & exchangeName, const QString &baseUrl, const QString &path, QObject *parent)
     : QObject(parent)
+    , id(0)
     , name_(exchangeName)
     , base_(baseUrl)
     , path_(path)
 {
-//    connect(&web_socket_, &QWebSocket::connected, this, &ExWssProtocol::onConnected);
+    connect(&web_socket_, &QWebSocket::connected, this, &ExWssProtocol::wssConnected);
     connect(&web_socket_, &QWebSocket::disconnected, this, &ExWssProtocol::wssDisconnected);
     connect(&web_socket_, QOverload<const QList<QSslError>&>::of(&QWebSocket::sslErrors), this, &ExWssProtocol::onSslErrors);
     connect(&web_socket_, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), this, &ExWssProtocol::onError);
@@ -21,53 +22,54 @@ ExWssProtocol::ExWssProtocol(const QString & exchangeName, const QString &baseUr
     connect(&web_socket_, &QWebSocket::textMessageReceived, this, &ExWssProtocol::onTextMessageReceived);
 }
 
-void ExWssProtocol::onConnected()
-{
-    TRACE("");
-
-// 	{
-// 		"method": "SUBSCRIBE",
-// 		"params":
-// 		[
-// 			"btcusdt@aggTrade",
-// 			"btcusdt@depth"
-// 		],
-// 		"id": 1
-// 	}
-    QJsonObject json;
-    json["method"] = "SUBSCRIBE";
-    QJsonArray array = {"btcusdt@ticker", "btcusdt@depth"};
-    json["params"] = array;
-    json["id"]     = 1;
-
-    TRACE("Subscription:") << json;
-
-    QJsonDocument d = QJsonDocument(json);
-
-    web_socket_.sendTextMessage(QString(d.toJson(QJsonDocument::Compact).toStdString().c_str()));
-}
-
 void ExWssProtocol::onTextMessageReceived(QString message)
 {
-    static int i = -1;
-    static QStringList list;
-
     QJsonDocument doc = QJsonDocument::fromJson(message.toLatin1());
-//    crex::data::dumpToFile(QString("../wss/wss-%1.json").arg(++i, 8, 10, QChar('0')), doc);
-
-    QString type = "UNKNOWN";
     QJsonObject obj = doc.object();
-    if (obj.contains("id"))
-        type = QString("ID: %1").arg(obj["id"].toInt());
-    if (obj.contains("e"))
-        type = QString("e: %1").arg(obj["e"].toString());
 
-    if (list.indexOf(QRegExp(QString("^[0-9].*: %1").arg(type))) < 0)
+    if (!obj.contains("e"))
+        return;
+    if (obj["e"] != "continuous_kline")
+        return;
+
+    data_.enqueue(obj);
+    emit dataReady();
+}
+
+void ExWssProtocol::wssConnected()
+{
+    TRACE("");
+    if (symbol_.isEmpty() || time_frame_.isEmpty())
     {
-        QString t = QString("%1: %2").arg(i).arg(type);
-        list.append(t);
-        TRACE("t:") << t;
+        TRACE("invalid params:") << "sym:" << symbol_ << "tf:" << time_frame_;
+        return;
     }
+
+    // 	{
+    // 		"method": "SUBSCRIBE",
+    // 		"params":
+    // 		[
+    // 			"btcusdt@aggTrade",
+    // 			"btcusdt@depth"
+    // 		],
+    // 		"id": 1
+    // 	}
+        QJsonObject json;
+        json["method"] = "SUBSCRIBE";
+        QJsonArray array = {
+//                QString("%1@ticker").arg(sym),
+//                QString("%1@depth").arg(sym),
+//                QString("%1@kline_%2").arg(sym).arg(tf),
+            QString("%1_%2@continuousKline_%3").arg(symbol_).arg("perpetual").arg(time_frame_)
+        };
+        json["params"] = array;
+        json["id"]     = ++id;
+
+        TRACE("") << json;
+
+        QJsonDocument d = QJsonDocument(json);
+
+        web_socket_.sendTextMessage(QString(d.toJson(QJsonDocument::Compact).toStdString().c_str()));
 }
 
 void ExWssProtocol::wssDisconnected()
@@ -93,44 +95,61 @@ void ExWssProtocol::onError(QAbstractSocket::SocketError error)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-ExWssRequest *ExWssProtocol::requestExchangeCandledata(const QString &symbol, const QString &timeFrame, const qlonglong startTime)
+ExWssRequest *ExWssProtocol::requestExchangeCandledata(const QString &symbol, const QString &timeFrame)
 {
-    Q_UNUSED(symbol);
-    Q_UNUSED(timeFrame);
-    Q_UNUSED(startTime);
+    symbol_ = symbol.toLower();
+    time_frame_ = timeFrame;
 
     web_socket_.open(QUrl(base_));
-
-    auto sym = symbol.toLower();
-    auto tf = timeFrame;
-    connect(&web_socket_, &QWebSocket::connected, this, [this, sym, tf](){
-        // 	{
-        // 		"method": "SUBSCRIBE",
-        // 		"params":
-        // 		[
-        // 			"btcusdt@aggTrade",
-        // 			"btcusdt@depth"
-        // 		],
-        // 		"id": 1
-        // 	}
-            QJsonObject json;
-            json["method"] = "SUBSCRIBE";
-            QJsonArray array = {
-//                QString("%1@ticker").arg(sym),
-//                QString("%1@depth").arg(sym),
-//                QString("%1@kline_%2").arg(sym).arg(tf),
-                QString("%1_%2@continuousKline_%3").arg(sym).arg("perpetual").arg(tf)
-            };
-            json["params"] = array;
-            json["id"]     = 1;
-
-            TRACE("Subscription:") << json;
-
-            QJsonDocument d = QJsonDocument(json);
-
-            web_socket_.sendTextMessage(QString(d.toJson(QJsonDocument::Compact).toStdString().c_str()));
-    });
 
     return nullptr;
 }
 
+void ExWssProtocol::unsubscribe()
+{
+    if (symbol_.isEmpty() || time_frame_.isEmpty())
+    {
+        return;
+    }
+
+//    {
+//        "method": "UNSUBSCRIBE",
+//        "params":
+//        [
+//            "btcusdt@depth"
+//        ],
+//        "id": 312
+//    }
+
+    QJsonObject json;
+    json["method"] = "UNSUBSCRIBE";
+    QJsonArray array = {
+//                QString("%1@ticker").arg(sym),
+//                QString("%1@depth").arg(sym),
+//                QString("%1@kline_%2").arg(sym).arg(tf),
+        QString("%1_%2@continuousKline_%3").arg(symbol_).arg("perpetual").arg(time_frame_)
+    };
+    json["params"] = array;
+    json["id"]     = ++id;
+
+    symbol_.clear();
+    time_frame_.clear();
+
+    TRACE("") << json;
+
+    QJsonDocument d = QJsonDocument(json);
+
+    web_socket_.sendTextMessage(QString(d.toJson(QJsonDocument::Compact).toStdString().c_str()));
+    web_socket_.close();
+
+    data_.clear();
+}
+
+QJsonObject ExWssProtocol::popData()
+{
+    if (!data_.empty())
+    {
+        return data_.dequeue();
+    }
+    return QJsonObject();
+}

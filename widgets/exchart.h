@@ -9,9 +9,12 @@
 #include <QByteArray>
 #include <QResizeEvent>
 #include <QMouseEvent>
+#include <QTimer>
 #include <QComboBox>
 #include <QLabel>
 #include <QJsonArray>
+
+#include <core/core.h>
 
 #include "exchangeprotocol.h"
 #include "exchange/exchangerequest.h"
@@ -25,7 +28,7 @@ class ExChart : public QCustomPlot
     Q_OBJECT
 
 public:
-    ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const QString symbol, QWidget *parent = nullptr);
+    ExChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent = nullptr);
 
     void setSymbol(QString symbol);
     void setCandles(QSharedPointer<QCPFinancialDataContainer> cont);
@@ -39,6 +42,7 @@ public slots:
 private slots:
     void onTimer();
     void onCandleDataReady();
+    void onWssDataReady();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -46,10 +50,12 @@ protected:
 
 private:
     void createTimeFrameButton();
+    void updateOlhcLabelValue(const QCPFinancialData &d);
     void placeOlhcLabel(const QString &s = QString());
 
     void parseJSON(QByteArray &json_data);
     QCPFinancialData parseJSONCandle(const QJsonArray &json);
+    void parseWssJSON(QJsonObject &data);
 
     int visibleCandlesCount();
 
@@ -71,6 +77,7 @@ private:
     QString timeFrame;
     QComboBox *tfCombo;
     QLabel *olhcDisplay;
+    QTimer *candleTimer;
 };
 
 } // namespace crex::chart

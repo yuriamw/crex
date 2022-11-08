@@ -12,6 +12,7 @@
 #include <QString>
 
 #include "logger.h"
+#include "data/data.h"
 
 namespace crex::chart {
 
@@ -33,13 +34,15 @@ namespace {
         "1w",
         "1M"
     };
+
+    const int candleWidth = 5;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// \brief ExChart::ExChart
 /// \param parent
 ///
-ExChart::ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const QString symbol, QWidget *parent):
+ExChart::ExChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent):
     QCustomPlot(parent)
   , hCursorLine(new QCPItemLine(this))
   , vCursorLine(new QCPItemLine(this))
@@ -48,10 +51,11 @@ ExChart::ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const 
   , request_(nullptr)
   , wss_request_(nullptr)
   , protocol_(protocol)
-  , wss_protocol_(wss_protocol)
+  , wss_protocol_(core->exchangeWssProtocol())
   , timeFrame(TimeFrames[0])
   , tfCombo(new QComboBox(this))
   , olhcDisplay(new QLabel("OLHC", this))
+  , candleTimer(new QTimer(this))
 {
     setWindowIcon(QIcon::fromTheme("graphics"));
     setSymbol(std::move(symbol));
@@ -75,7 +79,7 @@ ExChart::ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const 
     financial->setWidthType(QCPFinancial::wtAbsolute);
 //    financial->setWidthType(QCPFinancial::wtAxisRectRatio);
 //    financial->setWidthType(QCPFinancial::wtPlotCoords);
-    financial->setWidth(5);
+    financial->setWidth(candleWidth);
     xAxis->setRange(0, 0);
 
     QSharedPointer<QCPAxisTickerDateTime> xTicker = QSharedPointer<QCPAxisTickerDateTime>(new QCPAxisTickerDateTime);
@@ -86,9 +90,11 @@ ExChart::ExChart(ExchangeProtocol *protocol, ExWssProtocol *wss_protocol, const 
 
     createTimeFrameButton();
 
-    QTimer::singleShot(100, this, &ExChart::onTimer);
+    candleTimer->setSingleShot(true);
+    connect(candleTimer, &QTimer::timeout, this, &ExChart::onTimer);
+    candleTimer->start(100);
 
-    wss_request_ = wss_protocol_->requestExchangeCandledata(symbol_, timeFrame);
+    connect(wss_protocol_, &ExWssProtocol::dataReady, this, &ExChart::onWssDataReady);
 }
 
 void ExChart::setSymbol(QString symbol)
@@ -144,8 +150,12 @@ void ExChart::mouseMoveEvent(QMouseEvent *event)
     QRect bounds = QRect(axisRect(0)->topLeft(), axisRect(0)->bottomRight());
     if (event->x() >= bounds.topLeft().x() && event->x() < bounds.bottomRight().x())
     {
-        vCursorLine->start->setCoords(event->x(), bounds.topLeft().y());
-        vCursorLine->end->setCoords(event->x(), bounds.bottomRight().y());
+        const auto it = financial->data()->findBegin(xAxis->pixelToCoord(event->x()), true);
+        const auto d = *it;
+        const auto x = xAxis->coordToPixel(d.key);
+        vCursorLine->start->setCoords(x, bounds.topLeft().y());
+        vCursorLine->end->setCoords(x, bounds.bottomRight().y());
+        updateOlhcLabelValue(d);
     }
     if (event->y() >= bounds.topLeft().y() && event->y() < bounds.bottomRight().y())
     {
@@ -154,13 +164,26 @@ void ExChart::mouseMoveEvent(QMouseEvent *event)
     }
     replot();
 
-    const auto d = financial->data()->findBegin(xAxis->pixelToCoord(event->x()), true);
+//    const auto d = financial->data()->findBegin(xAxis->pixelToCoord(event->x()), true);
+//    QString olhc(QString("%1 O:%2 H:%3 L:%4 C:%5")
+//                 .arg(QDateTime::fromMSecsSinceEpoch(d->key).toString("yyyy-MM-dd hh:mm"))
+//                 .arg(d->open)
+//                 .arg(d->high)
+//                 .arg(d->low)
+//                 .arg(d->close)
+//            );
+
+//    placeOlhcLabel(olhc);
+}
+
+void ExChart::updateOlhcLabelValue(const QCPFinancialData &d)
+{
     QString olhc(QString("%1 O:%2 H:%3 L:%4 C:%5")
-                 .arg(QDateTime::fromMSecsSinceEpoch(d->key).toString("yyyy-MM-dd hh:mm"))
-                 .arg(d->open)
-                 .arg(d->high)
-                 .arg(d->low)
-                 .arg(d->close)
+                 .arg(QDateTime::fromMSecsSinceEpoch(d.key).toString("yyyy-MM-dd hh:mm"))
+                 .arg(d.open)
+                 .arg(d.high)
+                 .arg(d.low)
+                 .arg(d.close)
             );
 
     placeOlhcLabel(olhc);
@@ -187,7 +210,7 @@ void ExChart::placeOlhcLabel(const QString &s)
 {
     olhcDisplay->setText(s);
     QFontMetrics fm(olhcDisplay->font());
-    int w = fm.width(s);
+    int w = fm.horizontalAdvance(s);
     int h = fm.height();
     QSize sz(w, h);
 //    sz += QSize(4, 2);
@@ -199,8 +222,16 @@ void ExChart::placeOlhcLabel(const QString &s)
 ///
 void ExChart::switchTF(int index)
 {
+    candleTimer->stop();
+    wss_protocol_->unsubscribe();
+
     timeFrame = TimeFrames.at(index);
     financial->data()->clear();
+    replot();
+
+    dataInitialized = false;
+
+    candleTimer->start(100);
 }
 
 int ExChart::visibleCandlesCount()
@@ -239,7 +270,7 @@ void ExChart::scaleDataY()
     if (!autoScaleY)
         return;
 
-    const int N = visibleCandlesCount();
+//    const int N = visibleCandlesCount();
     auto end = financial->data()->findBegin(xAxis->pixelToCoord(axisRect(0)->bottomRight().x()), true);
     auto begin = financial->data()->findBegin(xAxis->pixelToCoord(axisRect(0)->topLeft().x()), true);
 
@@ -287,9 +318,13 @@ void ExChart::onCandleDataReady()
 
         parseJSON(json_data);
         dataInitialized = true;
+
+        TRACE("") << symbol_ << timeFrame;
+        wss_protocol_->requestExchangeCandledata(symbol_, timeFrame);
     }
 
-    QTimer::singleShot(550, this, &ExChart::onTimer);
+    if (!dataInitialized)
+        candleTimer->start(550);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -339,14 +374,64 @@ void ExChart::parseJSON(QByteArray &json_data)
 
 QCPFinancialData ExChart::parseJSONCandle(const QJsonArray &arr)
 {
-    QCPFinancialData fd(arr[0].toDouble(),
-                        arr[1].toString().toDouble(),
-                        arr[2].toString().toDouble(),
-                        arr[3].toString().toDouble(),
-                        arr[4].toString().toDouble()
+    const auto t = 0;
+    const auto o = 1;
+    const auto h = 2;
+    const auto l = 3;
+    const auto c = 4;
+
+    QCPFinancialData fd(arr[t].toDouble(),
+                        arr[o].toString().toDouble(),
+                        arr[h].toString().toDouble(),
+                        arr[l].toString().toDouble(),
+                        arr[c].toString().toDouble()
             );
     return fd;
 }
+
+void ExChart::onWssDataReady()
+{
+    QJsonObject data(wss_protocol_->popData());
+    parseWssJSON(data);
+}
+
+void ExChart::parseWssJSON(QJsonObject &data)
+{
+    if (data.isEmpty())
+    {
+        TRACE("EMPTY data");
+        return;
+    }
+
+    QJsonObject k(data["k"].toObject());
+    if (k.isEmpty())
+    {
+        TRACE("EMPTY k");
+        return;
+    }
+
+    QSharedPointer<QCPFinancialDataContainer> cont;
+    cont = QSharedPointer<QCPFinancialDataContainer>(new QCPFinancialDataContainer);
+
+    QCPFinancialData fd(k["t"].toDouble(),
+                        k["o"].toString().toDouble(),
+                        k["h"].toString().toDouble(),
+                        k["l"].toString().toDouble(),
+                        k["c"].toString().toDouble()
+            );
+
+    cont->add(std::move(fd));
+
+    setCandles(cont);
+    replot();
+
+    scaleData();
+
+    const auto it = financial->data()->findBegin(xAxis->pixelToCoord(vCursorLine->start->coords().x()), false);
+    const auto d = *it;
+    updateOlhcLabelValue(d);
+}
+
 
 } // namespace crex::chart
 

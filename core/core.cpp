@@ -33,7 +33,8 @@ ExchangeProtocol *Core::exchangeProtocol()
 
 ExWssProtocol *Core::exchangeWssProtocol()
 {
-    return exchange_wss_protocol_;
+    return new ExWssProtocol("Binance FUTURES", "wss://fstream.binance.com/ws", "", this);
+//    return exchange_wss_protocol_;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

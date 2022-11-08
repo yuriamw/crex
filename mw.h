@@ -12,6 +12,8 @@
 #include <QAction>
 #include <QMenu>
 
+#include <core/core.h>
+
 #include "exchangeinfo.h"
 #include "exchangeprotocol.h"
 #include "exchange/exwssprotocol.h"
@@ -24,7 +26,7 @@ class MW : public QMainWindow
     Q_OBJECT
 
 public:
-    MW(ExchangeProtocol *exprot, ExWssProtocol *wssprot, ExchangeInfo *exinfo, QWidget *parent = nullptr);
+    MW(ExchangeProtocol *exprot, Core *core, ExchangeInfo *exinfo, QWidget *parent = nullptr);
     ~MW();
 
 private:
@@ -57,9 +59,10 @@ private:
     QLabel *exchange_date_time_;
     QTreeView *tvMarket;
 
+    Core *core_;
     ExchangeInfo *exchange_info_;
     ExchangeProtocol *exchange_protocol_;
-    ExWssProtocol *exchange_wss_protocol_;
+//    ExWssProtocol *exchange_wss_protocol_;
 
     QMdiArea *mdiArea;
     QMenu *windowMenu;
