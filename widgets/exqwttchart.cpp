@@ -7,6 +7,9 @@
 #include <QwtPlotZoomer>
 #include <QwtPlotPanner>
 #include <QwtText>
+#include <QwtLinearScaleEngine>
+#include <QwtPlotMagnifier>
+#include <QwtPickerTrackerMachine>
 
 #include <QTimer>
 #include <QJsonDocument>
@@ -16,60 +19,32 @@
 #include <QColor>
 #include <QPen>
 
+#include "data/candledata.h"
+
+#include "widgets/excharttracker.h"
+
 #include "logger.h"
 
 namespace crex::chart {
 
-class Zoomer : public QwtPlotZoomer
-{
-  public:
-    Zoomer( QWidget* canvas )
-        : QwtPlotZoomer( canvas )
+namespace {
+
+    class DateScaleDraw : public QwtDateScaleDraw
     {
-        setRubberBandPen( QColor( Qt::darkGreen ) );
-        setTrackerMode( QwtPlotPicker::AlwaysOn );
-    }
+    public:
+        DateScaleDraw( Qt::TimeSpec timeSpec )
+            : QwtDateScaleDraw( timeSpec )
+        {
+            setDateFormat( QwtDate::Minute, "hh:mm\nddd dd MMM" );
+            setDateFormat( QwtDate::Hour, "hh:mm\nddd dd MMM" );
+            setDateFormat( QwtDate::Day, "ddd dd MMM" );
+            setDateFormat( QwtDate::Week, "Www" );
+            setDateFormat( QwtDate::Month, "MMM" );
+            setDateFormat( QwtDate::Year, "yyyy" );
+        }
+    };
 
-  protected:
-    virtual QwtText trackerTextF( const QPointF& pos ) const QWT_OVERRIDE
-    {
-        const QDateTime dt = QwtDate::toDateTime( pos.x() );
-
-        QString s;
-        s += QwtDate::toString( QwtDate::toDateTime( pos.x() ),
-            "MMM dd hh:mm ", QwtDate::FirstThursday );
-
-        QwtText text( s );
-        text.setColor( Qt::white );
-
-        QColor c = rubberBandPen().color();
-        text.setBorderPen( QPen( c ) );
-        text.setBorderRadius( 6 );
-        c.setAlpha( 170 );
-        text.setBackgroundBrush( c );
-
-        return text;
-    }
-};
-
-class DateScaleDraw : public QwtDateScaleDraw
-{
-  public:
-    DateScaleDraw( Qt::TimeSpec timeSpec )
-        : QwtDateScaleDraw( timeSpec )
-    {
-        // as we have dates from 2010 only we use
-        // format strings without the year
-
-        setDateFormat( QwtDate::Millisecond, "hh:mm:ss:zzz\nddd dd MMM" );
-        setDateFormat( QwtDate::Second, "hh:mm:ss\nddd dd MMM" );
-        setDateFormat( QwtDate::Minute, "hh:mm\nddd dd MMM" );
-        setDateFormat( QwtDate::Hour, "hh:mm\nddd dd MMM" );
-        setDateFormat( QwtDate::Day, "ddd dd MMM" );
-        setDateFormat( QwtDate::Week, "Www" );
-        setDateFormat( QwtDate::Month, "MMM" );
-    }
-};
+} // namespace
 
 ExQwtTChart::ExQwtTChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent):
     QwtPlot(parent)
@@ -77,33 +52,28 @@ ExQwtTChart::ExQwtTChart(ExchangeProtocol *protocol, Core *core, const QString s
     , protocol(protocol)
     , wssProtocol(core->exchangeWssProtocol())
     , symbol(symbol)
+    , curveData(new crex::data::CurveData())
 {
     setTitle(symbol);
 
-    setAxisTitle(QwtAxis::XBottom, symbol);
     setAxisScaleDraw(QwtAxis::XBottom, new DateScaleDraw(Qt::UTC));
     setAxisScaleEngine(QwtAxis::XBottom, new QwtDateScaleEngine(Qt::UTC));
+
+    auto yScaleEngine = new QwtLinearScaleEngine();
+    yScaleEngine->setAttribute(QwtScaleEngine::Floating);
+    setAxisScaleEngine(QwtAxis::YRight, yScaleEngine);
 
     setAxisVisible(QwtAxis::YLeft, false);
     setAxisVisible(QwtAxis::YRight, true);
 //    setAxisTitle(QwtAxis::YRight, QString("USDT"));
-//    setAxisTitle(QwtAxis::YLeft, QString("USDT"));
+
+    createXZoom();
 
     createCurve();
 
-    // LeftButton for the zooming
-    // MidButton for the panning
-    // RightButton: zoom out by 1
-    // Ctrl+RighButton: zoom out to full size
+    createTracker();
 
-//    Zoomer* zoomer = new Zoomer( canvas() );
-//    zoomer->setMousePattern( QwtEventPattern::MouseSelect2,
-//        Qt::RightButton, Qt::ControlModifier );
-//    zoomer->setMousePattern( QwtEventPattern::MouseSelect3,
-//        Qt::RightButton );
-
-//    QwtPlotPanner* panner = new QwtPlotPanner( canvas() );
-//    panner->setMouseButton( Qt::MiddleButton );
+    (void) new QwtPlotPanner( canvas() );
 
     QTimer::singleShot(100, this, &ExQwtTChart::onTimer);
 }
@@ -123,9 +93,32 @@ void ExQwtTChart::createCurve()
     curve->setSymbolBrush(QwtPlotTradingCurve::Decreasing, QColor(Qt::red));
     curve->setSymbolBrush(QwtPlotTradingCurve::Increasing, QColor(Qt::green));
 
+    curve->setSymbolExtent(60 * 1000.0);
+
+    curve->setData(curveData);
+
     curve->attach(this);
 
     curve->setVisible(true);
+}
+
+void ExQwtTChart::createXZoom()
+{
+    QwtPlotMagnifier *zoom_x = new QwtPlotMagnifier(canvas());
+//    zoom_x->setWheelModifiers(Qt::ControlModifier);
+    zoom_x->setAxisEnabled(Qt::XAxis, true);
+    zoom_x->setAxisEnabled(Qt::YAxis, false);
+    zoom_x->setWheelFactor(1.1);
+    zoom_x->setMouseButton(Qt::NoButton, Qt::NoModifier);
+    zoom_x->setZoomInKey(Qt::Key_Plus, Qt::ControlModifier | Qt::ShiftModifier);
+    zoom_x->setZoomOutKey(Qt::Key_Minus, Qt::ControlModifier);
+}
+
+void ExQwtTChart::createTracker()
+{
+    ExChartTracker *tracker = new ExChartTracker(this->canvas());
+    tracker->setStateMachine(new QwtPickerTrackerMachine());
+    tracker->setRubberBandPen(QPen("MediumOrchid"));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -141,11 +134,11 @@ void ExQwtTChart::onTimer()
         TRACE("empty");
 
     qlonglong startTime = -1.0; // Use default value
-//    auto dsize = curve->dataSize();
-//    if (dsize > 0)
-//    {
-//        startTime = curve->sample(dsize - 1).time;
-//    }
+    auto dsize = curve->dataSize();
+    if (dsize > 0)
+    {
+        startTime = curve->sample(dsize - 1).time;
+    }
 
     QString timeFrame = QString("1m");
 
@@ -210,34 +203,11 @@ void ExQwtTChart::parseJSON(QByteArray &json_data)
         samples += sample;
     }
 
-    QwtSeriesData<QwtOHLCSample> *items = curve->data();
-//    if (items->size() == 0)
-//    {
-        curve->setSamples(samples);
-//    }
-//    else
-//    {
-//        bool found = false;
-//        size_t idx;
-//        for (size_t i = items->size() - 1; i >= 0; i--)
-//        {
-//            if (QDateTime::fromMSecsSinceEpoch(items->sample(i).time) == QDateTime::fromMSecsSinceEpoch(samples[0].time))
-//            {
-//                found = true;
-//                idx = i;
-//                break;
-//            }
-//        }
-//        if (found)
-//        {
-//            auto cdata = dynamic_cast<QwtTradingChartData*>(items);
-//        }
-//    }
-    curve->setSymbolExtent(60 * 1000.0);
+    curveData->values().append(samples);
+
+    setAxisScaleDraw(QwtAxis::XBottom, new DateScaleDraw(Qt::UTC));
 
     replot();
-
-//    showItem(curve, true);
 }
 
 QwtOHLCSample ExQwtTChart::parseJSONCandle(const QJsonArray &arr)

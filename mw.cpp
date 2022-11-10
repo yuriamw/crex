@@ -127,14 +127,13 @@ void MW::createChartWindow(const QString symbol)
 //    mdiArea->addSubWindow(chart);
 //    chart->show();
 
-    crex::chart::ExQcpChart *ec = new crex::chart::ExQcpChart(exchange_protocol_, core_, /*std::move(*/symbol/*)*/);
-
+    crex::chart::ExQcpChart *ec = new crex::chart::ExQcpChart(exchange_protocol_, core_, symbol);
     mdiArea->addSubWindow(ec);
     ec->show();
 
-    crex::chart::ExQwtTChart *qc = new crex::chart::ExQwtTChart(exchange_protocol_, core_, std::move(symbol));
-    mdiArea->addSubWindow(qc);
-    qc->show();
+    crex::chart::ExQwtTChart *qt = new crex::chart::ExQwtTChart(exchange_protocol_, core_, symbol);
+    mdiArea->addSubWindow(qt);
+    qt->show();
 }
 
 void MW::startExchangeClock()

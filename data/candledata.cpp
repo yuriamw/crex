@@ -1,0 +1,126 @@
+/*****************************************************************************
+ * Qwt Examples - Copyright (C) 2002 Uwe Rathmann
+ * This file may be used under the terms of the 3-clause BSD License
+ *****************************************************************************/
+
+#include "candledata.h"
+
+#include <QwtOHLCSample>
+
+#include <QVector>
+#include <QList>
+#include <QMutex>
+#include <QReadWriteLock>
+#include <QDateTime>
+
+#include "logger.h"
+
+namespace crex::data {
+
+class CandleData::PrivateData
+{
+  public:
+    PrivateData()
+    {
+        values.reserve( 1000 );
+    }
+
+    QReadWriteLock lock;
+    QList<QwtOHLCSample> values;
+};
+
+CandleData::CandleData()
+{
+    m_data = new PrivateData();
+}
+
+CandleData::~CandleData()
+{
+    delete m_data;
+}
+
+int CandleData::size() const
+{
+    return m_data->values.size();
+}
+
+QwtOHLCSample CandleData::value(int index) const
+{
+    return m_data->values[index];
+}
+
+void CandleData::lock()
+{
+    m_data->lock.lockForRead();
+}
+
+void CandleData::unlock()
+{
+    m_data->lock.unlock();
+}
+
+void CandleData::append(const QwtOHLCSample &sample)
+{
+    m_data->lock.lockForWrite();
+
+    if (!m_data->values.isEmpty())
+    {
+        auto it = findMatch(sample);
+
+        if (it != m_data->values.end())
+        {
+            m_data->values.erase(it, m_data->values.end());
+        }
+    }
+
+    m_data->values.append(sample);
+
+    m_data->lock.unlock();
+}
+
+void CandleData::append(const QVector<QwtOHLCSample> &samples)
+{
+    if (samples.isEmpty())
+        return;
+
+    m_data->lock.lockForWrite();
+
+    if (!m_data->values.isEmpty())
+    {
+        auto it = findMatch(samples.at(0));
+
+        if (it != m_data->values.end())
+        {
+            m_data->values.erase(it, m_data->values.end());
+        }
+    }
+
+    auto data = samples.data();
+    auto len = samples.size();
+    for (int i = 0; i < len; i++)
+    {
+        m_data->values.append(data[i]);
+    }
+
+    m_data->lock.unlock();
+}
+
+QList<QwtOHLCSample>::iterator CandleData::findMatch(const QwtOHLCSample & earliest)
+{
+    auto rmStart = QDateTime::fromMSecsSinceEpoch(earliest.time);
+    auto it = m_data->values.rbegin();
+    auto end = m_data->values.rend();
+    for (;it != end; it++)
+    {
+        auto rmEnd = QDateTime::fromMSecsSinceEpoch(it->time);
+        if (rmStart < rmEnd)
+        {
+            continue;
+        }
+        break;
+    }
+
+    return it != end ? (it+1).base() : m_data->values.end();
+}
+
+} // namespace crex::data

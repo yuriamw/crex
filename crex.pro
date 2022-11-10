@@ -36,6 +36,8 @@ LIBS += -L/usr/local/qwt-6.2.0-dev/lib -lqwt
 
 SOURCES += \
     core/core.cpp \
+    data/candledata.cpp \
+    data/curvedata.cpp \
     data/data.cpp \
     data/datasim.cpp \
     exchange/exchangerequest.cpp \
@@ -50,11 +52,14 @@ SOURCES += \
     symbol.cpp \
     symbolitem.cpp \
     symbolmodel.cpp \
+    widgets/excharttracker.cpp \
     widgets/exqcpchart.cpp \
     widgets/exqwttchart.cpp
 
 HEADERS += \
     core/core.h \
+    data/candledata.h \
+    data/curvedata.h \
     data/data.h \
     data/datasim.h \
     exchange/exchangerequest.h \
@@ -70,6 +75,7 @@ HEADERS += \
     symbol.h \
     symbolitem.h \
     symbolmodel.h \
+    widgets/excharttracker.h \
     widgets/exqcpchart.h \
     widgets/exqwttchart.h
 

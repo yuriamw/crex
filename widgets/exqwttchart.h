@@ -1,5 +1,5 @@
-#ifndef EXQWTCHART_H
-#define EXQWTCHART_H
+#ifndef EXQWTTCHART_H
+#define EXQWTTCHART_H
 
 #include <QwtPlot>
 #include <QwtOHLCSample>
@@ -8,6 +8,8 @@
 #include <QJsonArray>
 
 #include <core/core.h>
+
+#include <data/curvedata.h>
 
 #include "exchangeprotocol.h"
 #include "exchange/exchangerequest.h"
@@ -32,15 +34,17 @@ private:
     ExWssProtocol *wssProtocol;
     QString symbol;
 
+    crex::data::CurveData *curveData;
     QwtPlotTradingCurve *curve;
 
 private:
     void createCurve();
+    void createXZoom();
+    void createTracker();
 
     void parseJSON(QByteArray &json_data);
     QwtOHLCSample parseJSONCandle(const QJsonArray &json);
-
 };
 
 } // namespace crex::chart
-#endif // EXQWTCHART_H
+#endif // EXQWTTCHART_H
