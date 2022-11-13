@@ -1,5 +1,4 @@
-#ifndef EXWSSPROTOCOL_H
-#define EXWSSPROTOCOL_H
+#pragma once
 
 #include <QObject>
 #include <QList>
@@ -44,5 +43,3 @@ private:
 
     QQueue<QJsonObject> data_;
 };
-
-#endif // EXWSSPROTOCOL_H

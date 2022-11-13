@@ -1,5 +1,4 @@
-#ifndef EXQCPCHART_H
-#define EXQCPCHART_H
+#pragma once
 
 #include <qcustomplot.h>
 
@@ -81,5 +80,3 @@ private:
 };
 
 } // namespace crex::chart
-
-#endif // EXQCPCHART_H

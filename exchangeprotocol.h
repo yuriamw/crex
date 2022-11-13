@@ -1,5 +1,4 @@
-#ifndef EXCHANGEPROTOCOL_H
-#define EXCHANGEPROTOCOL_H
+#pragma once
 
 #include <QObject>
 #include <QString>
@@ -46,5 +45,3 @@ private:
     QList<ExchangeRequest *>requests_;
     QNetworkAccessManager nam_;
 };
-
-#endif // EXCHANGEPROTOCOL_H

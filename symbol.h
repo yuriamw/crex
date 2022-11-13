@@ -1,5 +1,4 @@
-#ifndef SYMBOL_H
-#define SYMBOL_H
+#pragma once
 
 #include <QString>
 #include <QJsonObject>
@@ -23,5 +22,3 @@ public:
     int pricePrecision;
     int quantityPrecision;
 };
-
-#endif // SYMBOL_H

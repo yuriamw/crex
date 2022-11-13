@@ -1,5 +1,4 @@
-#ifndef DATA_H
-#define DATA_H
+#pragma once
 
 #include <QtGlobal>
 #include <QString>
@@ -18,5 +17,3 @@ struct candle_data {
 bool dumpToFile(const QString & filename, const QJsonDocument & doc);
 
 } // namespace crex::data
-
-#endif // DATA_H

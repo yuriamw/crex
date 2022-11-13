@@ -1,6 +1,4 @@
-#ifndef CORE_H
-#define CORE_H
-
+#pragma once
 #include <QObject>
 
 #include "exchange/exwssprotocol.h"
@@ -29,5 +27,3 @@ private:
 
     ExchangeRequest *exchange_info_request_;
 };
-
-#endif // CORE_H

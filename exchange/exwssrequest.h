@@ -1,5 +1,4 @@
-#ifndef EXWSSREQUEST_H
-#define EXWSSREQUEST_H
+#pragma once
 
 #include <QObject>
 
@@ -12,5 +11,3 @@ public:
 signals:
 
 };
-
-#endif // EXWSSREQUEST_H

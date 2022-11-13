@@ -1,4 +1,4 @@
-#include "exqwttchart.h"
+#include "exqwtchart.h"
 
 #include <QwtDate>
 #include <QwtDateScaleEngine>
@@ -46,7 +46,7 @@ namespace {
 
 } // namespace
 
-ExQwtTChart::ExQwtTChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent):
+ExQwtChart::ExQwtChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent):
     QwtPlot(parent)
     , request(nullptr)
     , protocol(protocol)
@@ -75,10 +75,10 @@ ExQwtTChart::ExQwtTChart(ExchangeProtocol *protocol, Core *core, const QString s
 
     (void) new QwtPlotPanner( canvas() );
 
-    QTimer::singleShot(100, this, &ExQwtTChart::onTimer);
+    QTimer::singleShot(100, this, &ExQwtChart::onTimer);
 }
 
-void ExQwtTChart::createCurve()
+void ExQwtChart::createCurve()
 {
     curve = new QwtPlotTradingCurve();
     curve->setOrientation(Qt::Vertical);
@@ -102,7 +102,7 @@ void ExQwtTChart::createCurve()
     curve->setVisible(true);
 }
 
-void ExQwtTChart::createXZoom()
+void ExQwtChart::createXZoom()
 {
     QwtPlotMagnifier *zoom_x = new QwtPlotMagnifier(canvas());
 //    zoom_x->setWheelModifiers(Qt::ControlModifier);
@@ -114,7 +114,7 @@ void ExQwtTChart::createXZoom()
     zoom_x->setZoomOutKey(Qt::Key_Minus, Qt::ControlModifier);
 }
 
-void ExQwtTChart::createTracker()
+void ExQwtChart::createTracker()
 {
     ExChartTracker *tracker = new ExChartTracker(this->canvas());
     tracker->setStateMachine(new QwtPickerTrackerMachine());
@@ -125,7 +125,7 @@ void ExQwtTChart::createTracker()
 /// Slots
 ///
 
-void ExQwtTChart::onTimer()
+void ExQwtChart::onTimer()
 {
     if (request)
         return;
@@ -143,10 +143,10 @@ void ExQwtTChart::onTimer()
     QString timeFrame = QString("1m");
 
     request = protocol->requestExchangeCandledata(symbol, timeFrame, startTime);
-    connect(request, &ExchangeRequest::dataReady, this, &ExQwtTChart::onCandleDataReady);
+    connect(request, &ExchangeRequest::dataReady, this, &ExQwtChart::onCandleDataReady);
 }
 
-void ExQwtTChart::onCandleDataReady()
+void ExQwtChart::onCandleDataReady()
 {
     if (request)
     {
@@ -159,7 +159,7 @@ void ExQwtTChart::onCandleDataReady()
 //        dataInitialized = true;
     }
 
-    QTimer::singleShot(550, this, &ExQwtTChart::onTimer);
+    QTimer::singleShot(550, this, &ExQwtChart::onTimer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@ void ExQwtTChart::onCandleDataReady()
 ///
 /// JSON Parser
 
-void ExQwtTChart::parseJSON(QByteArray &json_data)
+void ExQwtChart::parseJSON(QByteArray &json_data)
 {
     TRACE("");
 
@@ -210,7 +210,7 @@ void ExQwtTChart::parseJSON(QByteArray &json_data)
     replot();
 }
 
-QwtOHLCSample ExQwtTChart::parseJSONCandle(const QJsonArray &arr)
+QwtOHLCSample ExQwtChart::parseJSONCandle(const QJsonArray &arr)
 {
     QwtOHLCSample sample(QwtDate::toDouble(
                              QDateTime::fromMSecsSinceEpoch(arr[0].toDouble(), Qt::UTC)

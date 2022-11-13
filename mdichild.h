@@ -1,5 +1,4 @@
-#ifndef MDICHILD_H
-#define MDICHILD_H
+#pragma once
 
 namespace crex::mdichild {
 
@@ -12,5 +11,3 @@ enum MdiType {
 
 
 } // namespace crex::mdichild
-
-#endif // MDICHILD_H

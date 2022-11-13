@@ -1,5 +1,4 @@
-#ifndef MW_H
-#define MW_H
+#pragma once
 
 #include <QMainWindow>
 #include <QMdiArea>
@@ -67,4 +66,3 @@ private:
     QMdiArea *mdiArea;
     QMenu *windowMenu;
 };
-#endif // MW_H

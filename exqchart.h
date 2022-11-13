@@ -1,5 +1,4 @@
-#ifndef EXQCHART_H
-#define EXQCHART_H
+#pragma once
 
 #include <QChartView>
 #include <QCandlestickSet>
@@ -174,5 +173,3 @@ private:
     ExModel *model_;
     QtCharts::QHCandlestickModelMapper *mapper_;
 };
-
-#endif // EXQCHART_H

@@ -1,5 +1,4 @@
-#ifndef SYMBOLITEM_H
-#define SYMBOLITEM_H
+#pragma once
 
 #include <QList>
 
@@ -25,5 +24,3 @@ private:
     QList<Symbol> m_itemData;
     SymbolItem *m_parentItem;
 };
-
-#endif // SYMBOLITEM_H

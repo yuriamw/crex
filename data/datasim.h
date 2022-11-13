@@ -1,5 +1,4 @@
-#ifndef DATASIM_H
-#define DATASIM_H
+#pragma once
 
 #include <QVector>
 #include <QDateTime>
@@ -21,5 +20,3 @@ public:
 };
 
 } // namespace crex::data
-
-#endif // DATASIM_H

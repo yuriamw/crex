@@ -54,7 +54,7 @@ SOURCES += \
     symbolmodel.cpp \
     widgets/excharttracker.cpp \
     widgets/exqcpchart.cpp \
-    widgets/exqwttchart.cpp
+    widgets/exqwtchart.cpp
 
 HEADERS += \
     core/core.h \
@@ -77,7 +77,7 @@ HEADERS += \
     symbolmodel.h \
     widgets/excharttracker.h \
     widgets/exqcpchart.h \
-    widgets/exqwttchart.h
+    widgets/exqwtchart.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

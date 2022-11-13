@@ -1,5 +1,4 @@
-#ifndef EXCHANGEINFO_H
-#define EXCHANGEINFO_H
+#pragma once
 
 #include <QObject>
 #include <QByteArray>
@@ -58,5 +57,3 @@ private:
     qlonglong exchange_time_;
     QString exchange_timezone_;
 };
-
-#endif // EXCHANGEINFO_H

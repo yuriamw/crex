@@ -1,5 +1,4 @@
-#ifndef EXQWTTCHART_H
-#define EXQWTTCHART_H
+#pragma once
 
 #include <QwtPlot>
 #include <QwtOHLCSample>
@@ -18,11 +17,11 @@
 
 namespace crex::chart {
 
-class ExQwtTChart : public QwtPlot
+class ExQwtChart : public QwtPlot
 {
     Q_OBJECT
 public:
-    ExQwtTChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent = nullptr);
+    ExQwtChart(ExchangeProtocol *protocol, Core *core, const QString symbol, QWidget *parent = nullptr);
 
 private slots:
     void onTimer();
@@ -47,4 +46,3 @@ private:
 };
 
 } // namespace crex::chart
-#endif // EXQWTTCHART_H

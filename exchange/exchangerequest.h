@@ -1,5 +1,4 @@
-#ifndef EXCHANGEREQUEST_H
-#define EXCHANGEREQUEST_H
+#pragma once
 
 #include <QObject>
 #include <QString>
@@ -36,5 +35,3 @@ private:
     QNetworkReply *reply_;
     QByteArray data_;
 };
-
-#endif // EXCHANGEREQUEST_H

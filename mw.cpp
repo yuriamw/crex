@@ -30,7 +30,7 @@
 #include "mdichild.h"
 
 #include "widgets/exqcpchart.h"
-#include "widgets/exqwttchart.h"
+#include "widgets/exqwtchart.h"
 
 MW::MW(ExchangeProtocol *exprot, Core *core, ExchangeInfo *exinfo, QWidget *parent)
     : QMainWindow(parent)
@@ -131,7 +131,7 @@ void MW::createChartWindow(const QString symbol)
     mdiArea->addSubWindow(ec);
     ec->show();
 
-    crex::chart::ExQwtTChart *qt = new crex::chart::ExQwtTChart(exchange_protocol_, core_, symbol);
+    crex::chart::ExQwtChart *qt = new crex::chart::ExQwtChart(exchange_protocol_, core_, symbol);
     mdiArea->addSubWindow(qt);
     qt->show();
 }

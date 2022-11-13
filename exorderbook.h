@@ -1,5 +1,4 @@
-#ifndef EXORDERBOOK_H
-#define EXORDERBOOK_H
+#pragma once
 
 #include <QWidget>
 #include <QTableView>
@@ -103,5 +102,3 @@ private:
 
     ExOrderBookModel *model_;
 };
-
-#endif // EXORDERBOOK_H

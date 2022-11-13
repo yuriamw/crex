@@ -1,5 +1,4 @@
-#ifndef SYMBOLMODEL_H
-#define SYMBOLMODEL_H
+#pragma once
 
 #include <QAbstractItemModel>
 
@@ -31,5 +30,3 @@ private:
 
     SymbolItem *rootItem;
 };
-
-#endif // SYMBOLMODEL_H
