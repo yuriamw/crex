@@ -6,6 +6,7 @@
 #include <QwtText>
 
 #include <QPen>
+#include <QDateTime>
 
 #include "logger.h"
 
@@ -25,6 +26,7 @@ ExChartTracker::ExChartTracker(QWidget *parent)
 {
     setTrackerMode(QwtPlotPicker::ActiveOnly);
     setRubberBand(VLineRubberBand);
+//    setRubberBand(NoRubberBand);
 
     setStateMachine(new QwtPickerDragPointMachine());
 }
@@ -39,7 +41,6 @@ QwtText ExChartTracker::trackerTextF(const QPointF &pos) const
     const QwtPlotItemList curves = plot()->itemList( QwtPlotItem::Rtti_PlotTradingCurve );
     for (int i = 0; i < curves.size(); i++)
     {
-        TRACE("") << i;
         const QString curveInfo = curveInfoAt(static_cast<const QwtPlotTradingCurve *>(curves[i]), pos);
         if (!curveInfo.isEmpty())
         {
@@ -55,28 +56,35 @@ QwtText ExChartTracker::trackerTextF(const QPointF &pos) const
 
 QString ExChartTracker::curveInfoAt(const QwtPlotTradingCurve *curve, const QPointF &pos) const
 {
-    const QLineF line = curveLineAt(curve, pos.x());
-    if (line.isNull())
+    const QwtOHLCSample value = curveLineAt(curve, pos.x());
+    if (!value.isValid())
+    {
         return QString();
+    }
 
-    const double y = line.pointAt( (pos.x() - line.p1().x()) / line.dx() ).y();
-    QString info( "%1" );
+    QString info( "T:%1 O:%2 H:%3 L:%4 C:%5" );
 
-    return info.arg( y );
+    return info.arg(QDateTime::fromMSecsSinceEpoch(value.time).toString("yyyy-MM-dd hh:mm"))
+            .arg(value.open)
+            .arg(value.high)
+            .arg(value.low)
+            .arg(value.close);
 }
 
-QLineF ExChartTracker::curveLineAt(const QwtPlotTradingCurve* curve, double x ) const
+QwtOHLCSample ExChartTracker::curveLineAt(const QwtPlotTradingCurve* curve, double x ) const
 {
-    QLineF line;
+    QwtOHLCSample value(0.0, -1.0, 0.0, 0.0, 1.0); // invalid OHLC sample
 
     if ( curve->dataSize() >= 2 )
     {
-        const QRectF br = curve->boundingRect();
-        if ( ( br.width() > 0 ) && ( x >= br.left() ) && ( x <= br.right() ) )
+//
+//        Use boundingRec() for optimization but implementation of boundingRect() in CurveData
+//        somehow break the XBottom axis (re)scale
+//        if ( ( br.width() > 0 ) && ( x >= br.left() ) && ( x <= br.right() ) )
         {
             int index = qwtUpperSampleIndex<QwtOHLCSample>(*curve->data(), x, compareX());
 
-            if ( index == -1 && x == curve->sample( curve->dataSize() - 1 ).time )
+            if ( index == -1 && x >= curve->sample( curve->dataSize() - 1 ).time )
             {
                 // the last sample is excluded from qwtUpperSampleIndex
                 index = curve->dataSize() - 1;
@@ -84,13 +92,12 @@ QLineF ExChartTracker::curveLineAt(const QwtPlotTradingCurve* curve, double x ) 
 
             if ( index > 0 )
             {
-                line.setP1(QPointF(curve->sample(index - 1).time, curve->sample(index - 1).close));
-                line.setP2(QPointF(curve->sample(index).time, curve->sample(index).close));
+                value = curve->sample(index);
             }
         }
     }
 
-    return line;
+    return value;
 }
 
 

@@ -53,6 +53,8 @@ ExQwtChart::ExQwtChart(ExchangeProtocol *protocol, Core *core, const QString sym
     , wssProtocol(core->exchangeWssProtocol())
     , symbol(symbol)
     , curveData(new crex::data::CurveData())
+    , vLineMarker(new QwtPlotMarker())
+    , hLineMarker(new QwtPlotMarker())
 {
     setTitle(symbol);
 
@@ -119,6 +121,18 @@ void ExQwtChart::createTracker()
     ExChartTracker *tracker = new ExChartTracker(this->canvas());
     tracker->setStateMachine(new QwtPickerTrackerMachine());
     tracker->setRubberBandPen(QPen("MediumOrchid"));
+
+    vLineMarker->setXAxis(QwtAxis::XBottom);
+    vLineMarker->setYAxis(QwtAxis::YLeft);
+    vLineMarker->setLineStyle(QwtPlotMarker::VLine);
+    vLineMarker->setVisible(true);
+    vLineMarker->setValue(QDateTime::currentMSecsSinceEpoch(), 0.0);
+    vLineMarker->attach(this);
+
+//    hLineMarker->setXAxis(QwtAxis::XBottom);
+//    hLineMarker->setYAxis(QwtAxis::YLeft);
+//    hLineMarker->setLineStyle(QwtPlotMarker::HLine);
+//    hLineMarker->setVisible(true);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -204,8 +218,6 @@ void ExQwtChart::parseJSON(QByteArray &json_data)
     }
 
     curveData->values().append(samples);
-
-    setAxisScaleDraw(QwtAxis::XBottom, new DateScaleDraw(Qt::UTC));
 
     replot();
 }

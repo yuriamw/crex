@@ -3,6 +3,7 @@
 #include <QwtPlot>
 #include <QwtOHLCSample>
 #include <QwtPlotTradingCurve>
+#include <QwtPlotMarker>
 
 #include <QJsonArray>
 
@@ -35,6 +36,8 @@ private:
 
     crex::data::CurveData *curveData;
     QwtPlotTradingCurve *curve;
+    QwtPlotMarker *vLineMarker;
+    QwtPlotMarker *hLineMarker;
 
 private:
     void createCurve();
