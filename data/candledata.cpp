@@ -21,9 +21,35 @@ class CandleData::PrivateData
 {
   public:
     PrivateData()
+        : boundingRect( 1.0, 1.0, -2.0, -2.0 ) // invalid
+
     {
         values.reserve( 1000 );
     }
+
+    void append(const QwtOHLCSample &sample)
+    {
+        values.append(sample);
+
+        if (boundingRect.width() < 0 || boundingRect.height() < 0)
+        {
+            boundingRect.setBottomLeft(QPointF(sample.time, sample.low));
+            boundingRect.setTopRight(QPointF(sample.time, sample.high));
+        }
+        else
+        {
+            if (boundingRect.right() < sample.time)
+                boundingRect.setRight(sample.time);
+
+            if (boundingRect.bottom() > sample.low)
+                boundingRect.setBottom(sample.low);
+            if (boundingRect.top() < sample.high)
+                boundingRect.setTop(sample.high);
+        }
+//        TRACE("br") << sample.time <<  sample.low << sample.high << "|" << boundingRect.left() << boundingRect.right() << boundingRect.bottom() << boundingRect.top();
+    }
+
+    QRectF boundingRect;
 
     QReadWriteLock lock;
     QList<QwtOHLCSample> values;
@@ -47,6 +73,11 @@ int CandleData::size() const
 QwtOHLCSample CandleData::value(int index) const
 {
     return m_data->values[index];
+}
+
+QRectF CandleData::boundingRect() const
+{
+    return m_data->boundingRect;
 }
 
 void CandleData::lock()
@@ -73,7 +104,7 @@ void CandleData::append(const QwtOHLCSample &sample)
         }
     }
 
-    m_data->values.append(sample);
+    m_data->append(sample);
 
     m_data->lock.unlock();
 }
@@ -99,7 +130,7 @@ void CandleData::append(const QVector<QwtOHLCSample> &samples)
     auto len = samples.size();
     for (int i = 0; i < len; i++)
     {
-        m_data->values.append(data[i]);
+        m_data->append(data[i]);
     }
 
     m_data->lock.unlock();
