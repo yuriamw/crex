@@ -4,9 +4,12 @@
 #include <QwtPlot>
 #include <QwtPlotTradingCurve>
 #include <QwtText>
+#include <QwtPainter>
 
 #include <QPen>
 #include <QDateTime>
+#include <QPainter>
+#include <QPainterPath>
 
 #include "logger.h"
 
@@ -25,10 +28,31 @@ ExChartTracker::ExChartTracker(QWidget *parent)
     : QwtPlotPicker(parent)
 {
     setTrackerMode(QwtPlotPicker::ActiveOnly);
-    setRubberBand(VLineRubberBand);
-//    setRubberBand(NoRubberBand);
+    setRubberBand(CrossRubberBand);
 
     setStateMachine(new QwtPickerDragPointMachine());
+}
+
+QPolygon ExChartTracker::adjustedPoints( const QPolygon &points ) const
+{
+    const QwtPlotItemList curves = plot()->itemList( QwtPlotItem::Rtti_PlotTradingCurve );
+    if (curves.size() < 1)
+    {
+        return points;
+    }
+
+    QPolygon newPoints;
+    auto count = points.size();
+    auto data = points.data();
+    for (auto i = 0; i < count; i++)
+    {
+        const auto scaleX = plot()->invTransform(QwtAxis::XBottom, data[i].x());
+        const QwtOHLCSample sample = curveSampleAt(static_cast<const QwtPlotTradingCurve *>(curves[0]), scaleX);
+        const auto newX = plot()->transform(QwtAxis::XBottom, sample.time);
+        newPoints << QPoint(newX, data[i].y());
+    }
+
+    return newPoints;
 }
 
 QwtText ExChartTracker::trackerTextF(const QPointF &pos) const
@@ -56,7 +80,7 @@ QwtText ExChartTracker::trackerTextF(const QPointF &pos) const
 
 QString ExChartTracker::curveInfoAt(const QwtPlotTradingCurve *curve, const QPointF &pos) const
 {
-    const QwtOHLCSample value = curveLineAt(curve, pos.x());
+    const QwtOHLCSample value = curveSampleAt(curve, pos.x());
     if (!value.isValid())
     {
         return QString();
@@ -71,7 +95,7 @@ QString ExChartTracker::curveInfoAt(const QwtPlotTradingCurve *curve, const QPoi
             .arg(value.close);
 }
 
-QwtOHLCSample ExChartTracker::curveLineAt(const QwtPlotTradingCurve* curve, double x ) const
+QwtOHLCSample ExChartTracker::curveSampleAt(const QwtPlotTradingCurve* curve, double x ) const
 {
     QwtOHLCSample value(0.0, -1.0, 0.0, 0.0, 1.0); // invalid OHLC sample
 
@@ -99,7 +123,5 @@ QwtOHLCSample ExChartTracker::curveLineAt(const QwtPlotTradingCurve* curve, doub
 
     return value;
 }
-
-
 
 } // namespace crex::chart

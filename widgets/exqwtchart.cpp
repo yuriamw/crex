@@ -10,6 +10,7 @@
 #include <QwtLinearScaleEngine>
 #include <QwtPlotMagnifier>
 #include <QwtPickerTrackerMachine>
+#include <QwtScaleWidget>
 
 #include <QTimer>
 #include <QJsonDocument>
@@ -18,10 +19,12 @@
 #include <QDateTime>
 #include <QColor>
 #include <QPen>
+#include <QLabel>
 
 #include "data/candledata.h"
 
 #include "widgets/excharttracker.h"
+#include "widgets/extradingcurve.h"
 
 #include "logger.h"
 
@@ -53,8 +56,6 @@ ExQwtChart::ExQwtChart(ExchangeProtocol *protocol, Core *core, const QString sym
     , wssProtocol(core->exchangeWssProtocol())
     , symbol(symbol)
     , curveData(new crex::data::CurveData())
-    , vLineMarker(new QwtPlotMarker())
-    , hLineMarker(new QwtPlotMarker())
 {
     setTitle(symbol);
 
@@ -82,18 +83,15 @@ ExQwtChart::ExQwtChart(ExchangeProtocol *protocol, Core *core, const QString sym
 
 void ExQwtChart::createCurve()
 {
-    curve = new QwtPlotTradingCurve();
+    curve = new ExTradingCurve();
     curve->setOrientation(Qt::Vertical);
 
     curve->setXAxis(QwtAxis::XBottom);
     curve->setYAxis(QwtAxis::YRight);
 
-//    curve->setSymbolExtent(60 * 1000.0);
-//    curve->setMinSymbolWidth(3);
-//    curve->setMaxSymbolWidth(7);
-
-    curve->setSymbolBrush(QwtPlotTradingCurve::Decreasing, QColor(Qt::red));
-    curve->setSymbolBrush(QwtPlotTradingCurve::Increasing, QColor(Qt::green));
+    curve->setSymbolStyle(QwtPlotTradingCurve::UserSymbol);
+    curve->setSymbolBrush(QwtPlotTradingCurve::Increasing, QColor(QRgb(0xff32a000)));
+    curve->setSymbolBrush(QwtPlotTradingCurve::Decreasing, QColor(QRgb(0xffb4000f)));
 
     curve->setSymbolExtent(60 * 1000.0);
 
@@ -120,19 +118,8 @@ void ExQwtChart::createTracker()
 {
     ExChartTracker *tracker = new ExChartTracker(this->canvas());
     tracker->setStateMachine(new QwtPickerTrackerMachine());
-    tracker->setRubberBandPen(QPen("MediumOrchid"));
-
-    vLineMarker->setXAxis(QwtAxis::XBottom);
-    vLineMarker->setYAxis(QwtAxis::YLeft);
-    vLineMarker->setLineStyle(QwtPlotMarker::VLine);
-    vLineMarker->setVisible(true);
-    vLineMarker->setValue(QDateTime::currentMSecsSinceEpoch(), 0.0);
-    vLineMarker->attach(this);
-
-//    hLineMarker->setXAxis(QwtAxis::XBottom);
-//    hLineMarker->setYAxis(QwtAxis::YLeft);
-//    hLineMarker->setLineStyle(QwtPlotMarker::HLine);
-//    hLineMarker->setVisible(true);
+//    tracker->setRubberBandPen(QPen("MediumOrchid"));
+    (void) new QLabel("Scale", axisWidget(QwtAxis::YRight));
 }
 
 ////////////////////////////////////////////////////////////////////////////

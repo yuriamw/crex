@@ -3,7 +3,6 @@
 #include <QwtPlot>
 #include <QwtOHLCSample>
 #include <QwtPlotTradingCurve>
-#include <QwtPlotMarker>
 
 #include <QJsonArray>
 
@@ -15,6 +14,8 @@
 #include "exchange/exchangerequest.h"
 #include "exchange/exwssprotocol.h"
 #include "exchange/exwssrequest.h"
+
+#include "widgets/extradingcurve.h"
 
 namespace crex::chart {
 
@@ -35,9 +36,7 @@ private:
     QString symbol;
 
     crex::data::CurveData *curveData;
-    QwtPlotTradingCurve *curve;
-    QwtPlotMarker *vLineMarker;
-    QwtPlotMarker *hLineMarker;
+    ExTradingCurve *curve;
 
 private:
     void createCurve();

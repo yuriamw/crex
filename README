@@ -1,0 +1,9 @@
+CREX is Crypto Exchange terminal.
+
+CREX allows to watch the crypto assets in realtime using exchange REST API.
+
+Supported exchanges:
+- Binance FUTURES.
+
+CREX is based in part on the work of
+the Qwt project (http://qwt.sf.net).
